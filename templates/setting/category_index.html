@@ -1,0 +1,15 @@
+{% extends 'base.html' %}
+
+{% block header %}
+    <h1>{% block title %}Setting - Category{% endblock %}</h1>
+{% endblock %}
+
+{% block content %}
+    <ul>
+        {% for category in categorys %}
+            <li>{{ category['name'] }}</li>
+        {% endfor %}
+    </ul>
+    <h2><a href="{{ url_for('setting.categoryAdd') }}">Add New Category</a></h2>
+
+{% endblock %}

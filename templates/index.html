@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>Michael's Financial Tracker</title>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}" />
+	</head>
+	<body>
+
+		<!-- Header -->
+			<header id="header">
+				<div class="inner">
+					<a href="{{ url_for('index.index') }}" class="logo"><strong>System</strong> by Michael</a>
+					<nav id="nav">
+						<a href="{{ url_for('index.index') }}">Home</a>
+						<a href="{{ url_for('setting.catalog') }}">Settings</a>
+						<a href="{{ url_for('index.index') }}">Reports</a>
+					</nav>
+					<a href="#navPanel" class="navPanelToggle"><span class="fa fa-bars"></span></a>
+				</div>
+			</header>
+
+		<!-- Banner -->
+			<section id="banner">
+				<div class="inner">
+					<header>
+						<h1>Welcome to Michael's Financial Tracker</h1>
+					</header>
+
+					<div class="flex ">
+
+						<div>
+							<span class="icon fa-car"></span>
+							<h3>Fast</h3>
+							<p>Collects data within a GUI page</p>
+						</div>
+
+						<div>
+							<span class="icon fa-camera"></span>
+							<h3>Visualize</h3>
+							<p>Build reports based on your data</p>
+						</div>
+
+						<div>
+							<span class="icon fa-bug"></span>
+							<h3>Flexible</h3>
+							<p>Update your setting anytime</p>
+						</div>
+
+					</div>
+
+					<footer>
+						<a href="#" class="button">Get Started</a>
+					</footer>
+				</div>
+			</section>
+
+
+		<!-- Three -->
+			<section id="three" class="wrapper align-center">
+				<div class="inner">
+					<div class="flex flex-2">
+						<article>
+							<div class="image round">
+								<img src="{{ url_for('static', filename='images/bulb.png') }}" alt="Pic 01" />
+							</div>
+							<header>
+								<h3>Setting<br /> Configure what you want to capture</h3>
+							</header>
+							<p>In setting page, you can create the fields <br />you want to capture in each input,<br />and you can also modify the existing settings</p>
+							<footer>
+								<a href="{{ url_for('setting.catalog') }}" class="button">Learn More</a>
+							</footer>
+						</article>
+						<article>
+							<div class="image round">
+								<img src="{{ url_for('static', filename='images/report2.jpg') }}" alt="Pic 02" />
+							</div>
+							<header>
+								<h3>Report<br /> Display data in the way you like</h3>
+							</header>
+							<p>You can review the reports designed fo you, <br />or you can design the report in the way you like, <br /> by pointing and clicking.</p>
+							<footer>
+								<a href="#" class="button">Learn More</a>
+							</footer>
+						</article>
+					</div>
+				</div>
+			</section>
+
+		<!-- Footer -->
+		<!--
+			<footer id="footer">
+				<div class="inner">
+
+					<h3>Get in touch</h3>
+
+					<form action="#" method="post">
+
+						<div class="field half first">
+							<label for="name">Name</label>
+							<input name="name" id="name" type="text" placeholder="Name">
+						</div>
+						<div class="field half">
+							<label for="email">Email</label>
+							<input name="email" id="email" type="email" placeholder="Email">
+						</div>
+						<div class="field">
+							<label for="message">Message</label>
+							<textarea name="message" id="message" rows="6" placeholder="Message"></textarea>
+						</div>
+						<ul class="actions">
+							<li><input value="Send Message" class="button alt" type="submit"></li>
+						</ul>
+					</form>
+
+					<div class="copyright">
+						&copy; Untitled. Design: <a href="https://templated.co">TEMPLATED</a>. Images: <a href="https://unsplash.com">Unsplash</a>.
+					</div>
+
+				</div>
+			</footer>
+			-->
+
+		<!-- Scripts -->
+			<script src="{{ url_for('static', filename='js/jquery.min.js') }}"></script>
+			<script src="{{ url_for('static', filename='js/skel.min.js') }}"></script>
+			<script src="{{ url_for('static', filename='js/util.js') }}"></script>
+			<script src="{{ url_for('static', filename='js/main.js') }}"></script>
+
+	</body>
+</html>

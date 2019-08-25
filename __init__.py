@@ -2,6 +2,7 @@ import os
 
 from flask import Flask
 from . import db
+from . import index, setting
 
 def create_app(test_config=None):
     # Create and configure the application
@@ -28,5 +29,8 @@ def create_app(test_config=None):
         return 'Hello, World!'
 
     db.init_app(app)
+    app.register_blueprint(index.bp)
+    app.add_url_rule('/', endpoint='index')
+    app.register_blueprint(setting.bp)
 
     return app

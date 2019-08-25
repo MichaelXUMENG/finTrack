@@ -1,0 +1,17 @@
+{% extends 'base.html' %}
+
+{% block header %}
+    <h1>{% block title %}Setting - Sub Category{% endblock %}</h1>
+{% endblock %}
+
+{% block content %}
+    <form method="post">
+        Sub Category Name:<br>
+        <input type="text" name="name"><br>
+        Category name:<br>
+        {{ category['name'] }}
+        <input type="hidden" name="c_id" value="{{ category['id'] }}"><br>
+        <input type="submit" value="Submit">
+    </form>
+
+{% endblock %}

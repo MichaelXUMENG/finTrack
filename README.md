@@ -9,6 +9,6 @@ It's better to have Python 3 installed
   3. Within the activated environment, use the following command to install Flask: *pip install Flask*
 
 ## Database ##
-The 'DROP TABLE IF EXIST tablename' statement in 'schema.sql' means if the table existm then drop the table.
+The 'DROP TABLE IF EXIST tablename' statement in 'schema.sql' means if the table exist then drop the table.
 To initialize the database, run **flask init-db** (This command also erase all the existing data). 
 
