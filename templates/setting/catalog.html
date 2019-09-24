@@ -37,12 +37,16 @@
 						{% for category in settings['cat'] %}
 						<article class="item card">
 							<header>
-								<a href="#"><img src="{{ url_for('static', filename='images/setting/pic01.jpg') }}" alt="" /></a>
+								<a href="{{ url_for('setting.category_view', cid=category['id']) }}"><img src="{{ url_for('static', filename='images/setting/pic01.jpg') }}" alt="" /></a>
 								<h3>{{ category['name'] }}</h3>
 							</header>
 							<ul>
 								{% for sub in settings['sub'] %}
-									{% if sub['c_id']==category['id'] %}<li>{{ sub['name'] }}</li>{% endif %}
+									{% if sub['c_id']==category['id'] %}
+										<a href="{{ url_for('setting.sub_category_view', sid=sub['id']) }}">
+											<li>{{ sub['name'] }}</li>
+										</a>
+									{% endif %}
 								{% endfor %}
 							</ul>
 							<ul class="actions">
@@ -52,7 +56,7 @@
 						{% endfor %}
 						<article class="item card">
 							<header>
-								<a href="#"><img src="{{ url_for('static', filename='images/setting/pic01.jpg') }}" alt="" /></a>
+								<a href="{{ url_for('setting.category_add') }}"><img src="{{ url_for('static', filename='images/setting/pic01.jpg') }}" alt="" /></a>
 								<h3>New Category</h3>
 							</header>
 							<ul class="actions">
@@ -68,11 +72,13 @@
 							</header>
 							<ul>
 								{% for card in settings['card'] %}
-									<li>{{ card['name'] }}</li>
+									<a href="{{ url_for('setting.card_view', id=card['id']) }}">
+										<li>{{ card['name'] }}</li>
+									</a>
 								{% endfor %}
 							</ul>
 							<ul class="actions">
-								<li><a href="#" class="button">More</a></li>
+								<li><a href="{{ url_for('setting.card_add') }}" class="button">Add Card</a></li>
 							</ul>
 						</article>
 						<article class="item">
@@ -82,21 +88,23 @@
 							</header>
 							<ul>
 								{% for degree in settings['degree'] %}
-									<li>{{ degree['name'] }}</li>
+									<a href="{{ url_for('setting.degree_view', id=degree['id']) }}">
+										<li>{{ degree['name'] }}</li>
+									</a>
 								{% endfor %}
 							</ul>
 							<ul class="actions">
-								<li><a href="#" class="button">More</a></li>
+								<li><a href="{{ url_for('setting.degree_add') }}" class="button">Add Degree</a></li>
 							</ul>
 						</article>
 					</section>
 
 				<!-- CTA -->
 					<section id="cta" class="main special">
-						<h2>Etiam veroeros lorem</h2>
-						<p>Phasellus ac augue ac magna auctor tempus proin<br />
-						accumsan lacus a nibh commodo in pellentesque dui<br />
-						in hac habitasse platea dictumst.</p>
+						<h2>More Settings To Add</h2>
+						<p>There will be more settings to add when this application grows bigger<br />
+						This is the setting section for data input now<br />
+						More settings will be add when Report function is working.</p>
 						<ul class="actions">
 							<li><a href="#" class="button big">Get Started</a></li>
 						</ul>
@@ -121,7 +129,7 @@
 							<li><a href="#" class="icon fa-linkedin"><span class="label">LinkedIn</span></a></li>
 							<li><a href="#" class="icon fa-envelope"><span class="label">Email</span></a></li>
 						</ul>
-						<p class="copyright">&copy; Untitled. Design: <a href="https://templated.co">TEMPLATED</a>. Images: <a href="https://unsplash.com">Unsplash</a>.</p>
+						<p class="copyright">&copy; Michael. Design: <a href="https://templated.co">TEMPLATED</a>. Images: <a href="https://unsplash.com">Unsplash</a>.</p>
 					</footer>
 
 			</div>

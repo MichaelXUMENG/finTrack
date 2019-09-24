@@ -1,54 +1,47 @@
 {% extends 'setForm_base.html' %}
-{% block title %}Add Sub Category{% endblock %}
-
+{% block title %}Add Card{% endblock %}
 {% block content %}
 <div class="bg-contact2">
     <div class="container-contact2">
         <div class="wrap-contact2">
             <form class="contact2-form validate-form" method="post">
                 <span class="contact2-form-title">
-                    Add New Sub-Category
+                    Add New Card
                 </span>
 
-                <div class="wrap-input2 validate-input" data-validate="Sub-Category Name is required">
-                    Sub-CATEGORY NAME:<br>
+                <div class="wrap-input2 validate-input" data-validate="Card Name is required">
+                    Card NAME:<br>
                     <input class="input2" type="text" name="name" required>
                 </div>
-
                 <div class="wrap-input2 validate-input">
-                    Category name:<br>
-                    {{ category['name'] }}
-                    <input type="hidden" name="c_id" value="{{ category['id'] }}"><br>
-                </div>
-
-                <div class="wrap-input2 validate-input">
-                    Default Card:<br>
-                    <select name="default_card">
-                        <option value=""></option>
-                        {% for card in cards %}
-                            <option value="{{ card['id'] }}">{{ card['name'] }}</option>
-                        {% endfor %}
-                    </select>
+                    Card Bank:<br>
+                    <input class="input2" type="text" name="bank" required>
                 </div>
                 <div class="wrap-input2 validate-input">
-                    Default Degree:<br>
-                    <select name="default_degree">
-                        <option value=""></option>
-                        {% for degree in degrees %}
-                            <option value="{{ degree['id'] }}">{{ degree['name'] }}</option>
-                        {% endfor %}
-                    </select>
-
+                    Current Balance:<br>
+                    <input class="input2" type="number" name="balance">
                 </div>
+                <div>
+                    Payment Due Day:<br>
+                    <div class="wrapper-dropdown-3" >
+						<select class="dropdown" name="pay_day">
+                            {% for num in range(1, 31) %}
+							    <option class="icon-envelope icon-large" value="{{ num }}">{{ num }}</option>
+                            {% endfor %}
+						</select>
+					</div>
+                </div>
+
 
                 <div class="container-contact2-form-btn">
                     <div class="wrap-contact2-form-btn">
                         <div class="contact2-form-bgbtn"></div>
                         <button class="contact2-form-btn" type="submit" value="Submit">
-                            Add
+                            Save
                         </button>
                     </div>
                 </div>
+
                 <div class="container-contact2-form-btn">
                     <div class="wrap-contact2-form-btn">
                         <div class="contact2-form-bgbtn"></div>
@@ -57,6 +50,7 @@
                         </a>
                     </div>
                 </div>
+
             </form>
         </div>
     </div>

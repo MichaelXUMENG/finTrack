@@ -22,9 +22,10 @@ CREATE TABLE sub_categories (
 
 CREATE TABLE cards (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
+    bank TEXT NOT NULL,
     name TEXT UNIQUE NOT NULL,
     cur_balance INTEGER,
-    pay_date DATE
+    pay_date INTEGER
 );
 
 CREATE TABLE degrees (

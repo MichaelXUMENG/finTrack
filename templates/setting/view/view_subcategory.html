@@ -1,0 +1,47 @@
+{% extends 'setForm_base.html' %}
+{% block title %}Add Sub Category{% endblock %}
+
+{% block content %}
+<div class="bg-contact2">
+    <div class="container-contact2">
+        <div class="wrap-contact2">
+            <form class="contact2-form validate-form" method="post">
+                <span class="contact2-form-title">
+                    View Sub-Category: {{ sub_category['name'] }}
+                </span>
+
+                <div class="wrap-input2 validate-input" >
+                    Category Name:<br>
+                    {{ sub_category['c_name'] }}
+                </div>
+
+                <div class="wrap-input2 validate-input" >
+                    Sub-Category ID:<br>
+                    {{ sub_category['id'] }}
+                </div>
+                <div class="wrap-input2 validate-input" >
+                    Sub-Category Name:<br>
+                    {{ sub_category['name'] }}
+                </div>
+                <div class="wrap-input2 validate-input">
+                    Default Card:<br>
+                    {{ sub_category['default_card'] }}
+                </div>
+                <div class="wrap-input2 validate-input">
+                    Default Degree:<br>
+                    {{ sub_category['default_degree'] }}
+                </div>
+
+                <div class="container-contact2-form-btn">
+                    <div class="wrap-contact2-form-btn">
+                        <div class="contact2-form-bgbtn"></div>
+                        <a href="{{ url_for('setting.catalog') }}" class="contact2-form-btn">
+                            Return
+                        </a>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

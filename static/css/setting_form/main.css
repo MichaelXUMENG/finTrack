@@ -7,17 +7,17 @@
 
 @font-face {
   font-family: Poppins-Regular;
-  src: url('../fonts/poppins/Poppins-Regular.ttf'); 
+  src: url('../../fonts/setting_form/poppins/Poppins-Regular.ttf');
 }
 
 @font-face {
   font-family: Poppins-Medium;
-  src: url('../fonts/poppins/Poppins-Medium.ttf'); 
+  src: url('../../fonts/setting_form/poppins/Poppins-Medium.ttf');
 }
 
 @font-face {
   font-family: Poppins-Bold;
-  src: url('../fonts/poppins/Poppins-Bold.ttf'); 
+  src: url('../../fonts/setting_form/poppins/Poppins-Bold.ttf');
 }
 
 
@@ -440,4 +440,37 @@ textarea.input2 + .focus-input2::after {
     visibility: visible;
     opacity: 1;
   }
+}
+
+/*
+Drop-down Box
+*/
+
+.wrapper-dropdown-3 .dropdown {
+  /* Size & position */
+    position: relative;
+    width: 200px;
+    margin: 0 auto;
+    padding: 10px;
+    top: 140%;
+    left: 0;
+    right: 0;
+
+    /* Styles */
+    background: white;
+    border-radius: 7px;
+    border: 1px solid rgba(0,0,0,0.17);
+    box-shadow: 0 0 5px rgba(0,0,0,0.1);
+    font-weight: normal;
+    -webkit-transition: all 0.5s ease-in;
+    -moz-transition: all 0.5s ease-in;
+    -ms-transition: all 0.5s ease-in;
+    -o-transition: all 0.5s ease-in;
+    transition: all 0.5s ease-in;
+    list-style: none;
+}
+
+.wrapper-dropdown-3.active .dropdown {
+    opacity: 1;
+    pointer-events: auto;
 }

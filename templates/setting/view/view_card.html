@@ -1,0 +1,46 @@
+{% extends 'setForm_base.html' %}
+{% block title %}Add Card{% endblock %}
+{% block content %}
+<div class="bg-contact2">
+    <div class="container-contact2">
+        <div class="wrap-contact2">
+            <form class="contact2-form validate-form" method="post">
+                <span class="contact2-form-title">
+                    View Card: {{ card['name'] }}
+                </span>
+
+                <div class="wrap-input2 validate-input">
+                    Card ID:<br>
+                    {{ card['id'] }}
+                </div>
+                <div class="wrap-input2 validate-input">
+                    Card Name:<br>
+                    {{ card['name'] }}
+                </div>
+                <div class="wrap-input2 validate-input">
+                    Card Bank:<br>
+                    {{ card['bank'] }}
+                </div>
+                <div class="wrap-input2 validate-input">
+                    Current Balance:<br>
+                    {{ card['cur_balance'] }}
+                </div>
+                <div class="wrap-input2 validate-input">
+                    Payment Due Day:<br>
+                    {{ card['pay_date'] }}
+                </div>
+
+                <div class="container-contact2-form-btn">
+                    <div class="wrap-contact2-form-btn">
+                        <div class="contact2-form-bgbtn"></div>
+                        <a href="{{ url_for('setting.catalog') }}" class="contact2-form-btn">
+                            Return
+                        </a>
+                    </div>
+                </div>
+
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
