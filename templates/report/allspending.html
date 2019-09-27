@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+<form>
+    {% for item in spendings %}
+    <div>
+        ID: <br>
+        {{ item['id'] }}
+    </div>
+    <div>
+        Name: <br>
+        {{ item['name'] }}
+    </div>
+    <div>
+        Amount: <br>
+        {{ item['amount'] }}
+    </div>
+    <div>
+        Category: <br>
+        {{ item['category'] }}
+    </div>
+    <div>
+        Sub-Category: <br>
+        {{ item['sub_category'] }}
+    </div>
+    <div>
+        Year: <br>
+        {{ item['yr'] }}
+    </div>
+    <div>
+        Month: <br>
+        {{ item['mon'] }}
+    </div>
+    <div>
+        Day: <br>
+        {{ item['daynum'] }}
+    </div>
+    <div>
+        Card: <br>
+        {{ item['card'] }}
+    </div>
+    <div>
+        Degree: <br>
+        {{ item['degree'] }}
+    </div>
+    <div>
+        Comment: <br>
+        {{ item['comments'] }}
+    </div>
+    <br><br><br><br><br>
+    {% endfor %}
+</form>
+</body>
+</html>

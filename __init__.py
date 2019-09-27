@@ -2,7 +2,7 @@ import os
 
 from flask import Flask
 from . import db
-from . import index, setting
+from . import index, setting, spending, report
 
 def create_app(test_config=None):
     # Create and configure the application
@@ -32,5 +32,7 @@ def create_app(test_config=None):
     app.register_blueprint(index.bp)
     app.add_url_rule('/', endpoint='index')
     app.register_blueprint(setting.bp)
+    app.register_blueprint(spending.bp)
+    app.register_blueprint(report.bp)
 
     return app

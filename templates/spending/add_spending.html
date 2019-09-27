@@ -1,0 +1,101 @@
+{% extends 'spending_base.html' %}
+{% block title %}Record a Spending{% endblock %}
+
+{% block content %}
+
+<div class="container-contact100">
+    <div class="wrap-contact100">
+        <form class="contact100-form validate-form" method="post">
+            <span class="contact100-form-title">
+                Record a Spending
+            </span>
+
+            <div class="wrap-input100 validate-input bg1" data-validate="Please enter spending name">
+                <span class="label-input100">Spending Title *</span>
+                <input class="input100" type="text" name="name" placeholder="Spending Title" required>
+            </div>
+            <div class="wrap-input100 validate-input bg1" data-validate="Please enter spending name">
+                <span class="label-input100">Amount *</span>
+                <input class="input100" type="number" name="amount" placeholder="$##.##" required>
+            </div>
+
+            <div class="wrap-input100 input100-select bg1">
+                <span class="label-input100">Category *</span>
+                <div>
+                    <select class="js-select2" name="sub_category">
+                        <option value="">Choose a Category</option>
+                        {% for cat in settings['cats'] %}
+                        <optgroup label="{{ cat['name'] }}">
+                            {% for sub in settings['subCats'] %}
+                            {% if sub['c_id']==cat['id'] %}
+                            <option value="{{ sub['id'] }}">{{ sub['name'] }}</option>
+                            {% endif %}
+                            {% endfor %}
+                        </optgroup>
+                        {% endfor %}
+                    </select>
+                    <div class="dropDownSelect2"></div>
+                </div>
+            </div>
+
+            <div class="wrap-input100 validate-input bg1" data-validate="Please enter spending name">
+                <span class="label-input100">Spending Date *</span>
+                <input class="input100" type="date" name="date" placeholder="MM/DD/YYYY" required>
+            </div>
+
+            <div class="wrap-input100 bg1 rs1-wrap-input100">
+                <span class="label-input100">Card *</span>
+                <div>
+                    <select class="js-select2" name="card" required>
+                        <option value="">Please Choose a Card</option>
+                        {% for card in settings['cards'] %}
+                        <option value="{{ card['id'] }}">{{ card['name'] }}</option>
+                        {% endfor %}
+                    </select>
+                    <div class="dropDownSelect2"></div>
+                </div>
+            </div>
+            <div class="wrap-input100 bg1 rs1-wrap-input100">
+                <span class="label-input100">Degree</span>
+                <div>
+                    <select class="js-select2" name="degree" required>
+                        <option value="">Please Choose a Degree</option>
+                        {% for degree in settings['degrees'] %}
+                        <option value="{{ degree['id'] }}">{{ degree['name'] }}</option>
+                        {% endfor %}
+                    </select>
+                    <div class="dropDownSelect2"></div>
+                </div>
+            </div>
+
+            <div class="wrap-input100 bg0 rs1-alert-validate">
+                <span class="label-input100">Message</span>
+                <textarea class="input100" name="comments" placeholder="Your comments here..."></textarea>
+            </div>
+
+            <div class="container-contact100-form-btn">
+                <button class="contact100-form-btn" type="submit" name="mode" value="aaa">
+                    <span>
+                        Save and Add Another One
+                        <i class="fa fa-long-arrow-right m-l-7" aria-hidden="true"></i>
+                    </span>
+                </button>
+            </div>
+            <div class="container-contact100-form-btn">
+                <button class="contact100-form-btn" type="submit" name="mode" value="com">
+                    <span>
+                        Save and Complete
+                        <i class="fa fa-long-arrow-right m-l-7" aria-hidden="true"></i>
+                    </span>
+                </button>
+            </div>
+            <div class="container-contact100-form-btn">
+                <a href="{{ url_for('index.index') }}" class="contact100-form-btn">
+                    Return
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% endblock %}

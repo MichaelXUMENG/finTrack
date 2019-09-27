@@ -15,7 +15,7 @@
 					<nav id="nav">
 						<a href="{{ url_for('index.index') }}">Home</a>
 						<a href="{{ url_for('setting.catalog') }}">Settings</a>
-						<a href="{{ url_for('index.index') }}">Reports</a>
+						<a href="{{ url_for('report.view_all_spending') }}">Reports</a>
 					</nav>
 					<a href="#navPanel" class="navPanelToggle"><span class="fa fa-bars"></span></a>
 				</div>
@@ -51,7 +51,7 @@
 					</div>
 
 					<footer>
-						<a href="#" class="button">Record a Spending</a>
+						<a href="{{ url_for('spending.spending_add') }}" class="button">Record a Spending</a>
 					</footer>
 				</div>
 			</section>
