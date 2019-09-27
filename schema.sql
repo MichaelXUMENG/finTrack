@@ -39,6 +39,7 @@ CREATE TABLE spending (
     category INTEGER NOT NULL,
     sub_category INTEGER NOT NULL,
     date_stamp DATE NOT NULL,
+    yr YEAR NOT NULL,
     mon MONTH NOT NULL,
     daynum DAY NOT NULL,
     card INTEGER NOT NULL,

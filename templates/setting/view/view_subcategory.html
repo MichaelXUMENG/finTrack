@@ -35,6 +35,14 @@
                 <div class="container-contact2-form-btn">
                     <div class="wrap-contact2-form-btn">
                         <div class="contact2-form-bgbtn"></div>
+                        <a href="{{ url_for('setting.sub_category_edit', sid=sub_category['id']) }}" class="contact2-form-btn">
+                            Edit
+                        </a>
+                    </div>
+                </div>
+                <div class="container-contact2-form-btn">
+                    <div class="wrap-contact2-form-btn">
+                        <div class="contact2-form-bgbtn"></div>
                         <a href="{{ url_for('setting.catalog') }}" class="contact2-form-btn">
                             Return
                         </a>

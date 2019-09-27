@@ -1,5 +1,5 @@
 {% extends 'setForm_base.html' %}
-{% block title %}View Category{% endblock %}
+{% block title %}Add Category{% endblock %}
 
 {% block content %}
 <div class="bg-contact2">
@@ -7,30 +7,32 @@
         <div class="wrap-contact2">
             <form class="contact2-form validate-form" method="post">
                 <span class="contact2-form-title">
-                    View Category: {{ category['name'] }}
+                    Edit Category: {{ category['name'] }}
                 </span>
 
                 <div class="wrap-input2 validate-input" >
                     Category Id:<br>
                     {{ category['id'] }}
                 </div>
-                <div class="wrap-input2 validate-input" >
+                <div class="wrap-input2 validate-input" data-validate="Category Name is required">
                     Category Name:<br>
-                    {{ category['name'] }}
+                    <input class="input2" type="text" name="name"
+                           value="{{ request.form['name'] or category['name'] }}" required>
                 </div>
 
                 <div class="container-contact2-form-btn">
                     <div class="wrap-contact2-form-btn">
                         <div class="contact2-form-bgbtn"></div>
-                        <a href="{{ url_for('setting.category_edit', cid=category['id']) }}" class="contact2-form-btn">
-                            Edit
-                        </a>
+                        <button class="contact2-form-btn" type="submit" value="Submit">
+                            Save
+                        </button>
                     </div>
                 </div>
+
                 <div class="container-contact2-form-btn">
                     <div class="wrap-contact2-form-btn">
                         <div class="contact2-form-bgbtn"></div>
-                        <a href="{{ url_for('setting.catalog') }}" class="contact2-form-btn">
+                        <a href="{{ url_for('setting.category_view', cid=category['id']) }}" class="contact2-form-btn">
                             Return
                         </a>
                     </div>

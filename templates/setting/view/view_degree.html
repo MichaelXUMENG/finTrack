@@ -7,7 +7,7 @@
         <div class="wrap-contact2">
             <form class="contact2-form validate-form" method="post">
                 <span class="contact2-form-title">
-                    Add Degree: {{ degree['name'] }}
+                    View Degree: {{ degree['name'] }}
                 </span>
 
                 <div class="wrap-input2 validate-input">
@@ -19,6 +19,14 @@
                     {{ degree['name'] }}
                 </div>
 
+                <div class="container-contact2-form-btn">
+                    <div class="wrap-contact2-form-btn">
+                        <div class="contact2-form-bgbtn"></div>
+                        <a href="{{ url_for('setting.degree_edit', id=degree['id']) }}" class="contact2-form-btn">
+                            Edit
+                        </a>
+                    </div>
+                </div>
                 <div class="container-contact2-form-btn">
                     <div class="wrap-contact2-form-btn">
                         <div class="contact2-form-bgbtn"></div>

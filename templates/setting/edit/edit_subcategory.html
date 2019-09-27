@@ -1,0 +1,81 @@
+{% extends 'setForm_base.html' %}
+{% block title %}Add Sub Category{% endblock %}
+
+{% block content %}
+<div class="bg-contact2">
+    <div class="container-contact2">
+        <div class="wrap-contact2">
+            <form class="contact2-form validate-form" method="post">
+                <span class="contact2-form-title">
+                    Edit Sub-Category: {{ sub_category['name'] }}
+                </span>
+
+                <div class="wrap-input2 validate-input" >
+                    Category Name:<br>
+                    <select name="c_id">
+                        {% for cat in category %}
+                            {% if cat['id']==sub_category['c_id'] %}
+                                <option value="{{ cat['id'] }}" selected>{{ cat['name'] }}</option>
+                            {% else %}
+                                <option value="{{ cat['id'] }}">{{ cat['name'] }}</option>
+                            {% endif %}
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="wrap-input2 validate-input" >
+                    Sub-Category ID:<br>
+                    {{ sub_category['id'] }}
+                </div>
+                <div class="wrap-input2 validate-input" data-validate="Sub-Category Name is required">
+                    Sub-CATEGORY NAME:<br>
+                    <input class="input2" type="text" name="name"
+                           value="{{ request.form['name'] or sub_category['name'] }}" required>
+                </div>
+
+                <div class="wrap-input2 validate-input">
+                    Default Card:<br>
+                    <select name="default_card">
+                        {% for card in cards %}
+                            {% if card['id']==sub_category['default_card'] %}
+                                <option value="{{ card['id'] }}" selected>{{ card['name'] }}</option>
+                            {% else %}
+                                <option value="{{ card['id'] }}">{{ card['name'] }}</option>
+                            {% endif %}
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="wrap-input2 validate-input">
+                    Default Degree:<br>
+                    <select name="default_degree">
+                        {% for degree in degrees %}
+                            {% if degree['id']==sub_category['default_degree'] %}
+                                <option value="{{ degree['id'] }}" selected>{{ degree['name'] }}</option>
+                            {% else %}
+                                <option value="{{ degree['id'] }}">{{ degree['name'] }}</option>
+                            {% endif %}
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="container-contact2-form-btn">
+                    <div class="wrap-contact2-form-btn">
+                        <div class="contact2-form-bgbtn"></div>
+                        <button class="contact2-form-btn" type="submit" value="Submit">
+                            Save
+                        </button>
+                    </div>
+                </div>
+                <div class="container-contact2-form-btn">
+                    <div class="wrap-contact2-form-btn">
+                        <div class="contact2-form-bgbtn"></div>
+                        <a href="{{ url_for('setting.sub_category_view', sid=sub_category['id']) }}" class="contact2-form-btn">
+                            Return
+                        </a>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
