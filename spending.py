@@ -38,13 +38,35 @@ def get_subCategory(sub_id=0, fet_all=True):
     return subCat
 
 
-def get_card():
-    cards = get_db().execute(
-        'SELECT id, name, bank, cur_balance, pay_date'
+def get_card(card_id=0, fet_all=True):
+    if fet_all:
+        card = get_db().execute(
+            'SELECT id, name, bank, cur_balance, pay_date'
+            ' FROM cards'
+            ' ORDER BY bank, name'
+        ).fetchall()
+    else:
+        card = get_db().execute(
+            'SELECT id, name, bank, cur_balance, pay_date'
+            ' FROM cards'
+            ' WHERE id = ?',
+            (card_id,)
+        ).fetchone()
+
+    if card is None:
+        abort(404, "Card id {0} doesn't exist.".format(card_id))
+
+    return card
+
+
+def get_card_balance(card_id):
+    balance = get_db().execute(
+        'SELECT cur_balance'
         ' FROM cards'
-        ' ORDER BY bank, name'
-    ).fetchall()
-    return cards
+        ' WHERE id = ?',
+        (card_id,)
+    ).fetchone()
+    return balance
 
 
 def get_degree():
@@ -60,7 +82,7 @@ def get_degree():
 def spending_add():
     if request.method == 'POST':
         name = request.form['name']
-        amount = request.form['amount']
+        amount = float(request.form['amount'])
         sub_id = request.form['sub_category']
         cat_id = get_subCategory(sub_id, False)['c_id']
         date = request.form['date']
@@ -70,38 +92,31 @@ def spending_add():
         mode = request.form['mode']
 
         year = int(date[-4:])
-        month = int(date[:2])
-        day = int(date[3:5])
-        flash("This will be executed")
-        error = None
+        mbar = date.index('/')
+        month = int(date[:mbar])
+        dbar = date[mbar+1:].index('/')
+        day = int(date[mbar+1:mbar+dbar+1])
 
-        if not name:
-            error = "The spending name is required!!!"
-        if not cat_id:
-            error = "The Category is required!!!"
-        if not sub_id:
-            error = "The Sub Category is required!!!"
-        if not date:
-            error = "The Date is required!!!"
-        if not card_id:
-            error = "The Card is required!!!"
-        if not degree_id:
-            error = "The Degree is required!!!"
+        balance = get_card_balance(card_id)['cur_balance']
+        balance += amount
 
-        if error is not None:
-            flash(error)
-        else:
-            db = get_db()
-            db.execute(
-                'INSERT INTO spending (name, amount, category, sub_category, yr, mon, daynum, card, degree, comments)'
-                ' VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-                (name, amount, cat_id, sub_id, year, month, day, card_id, degree_id, comments)
-            )
-            db.commit()
-            if mode == 'com': # Add and Complete
-                return redirect(url_for('index.index'))
-            elif mode == 'aaa': # Add and Another
-                return redirect(url_for('spending.spending_add'))
+        db = get_db()
+        db.execute(
+            'INSERT INTO spending (name, amount, category, sub_category, yr, mon, daynum, card, degree, comments)'
+            ' VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+            (name, amount, cat_id, sub_id, year, month, day, card_id, degree_id, comments)
+        )
+        db.commit()
+        db.execute(
+            'UPDATE cards SET cur_balance = ?'
+            ' WHERE id = ?',
+            (balance, card_id)
+        )
+        db.commit()
+        if mode == 'com': # Add and Complete
+            return redirect(url_for('index.index'))
+        elif mode == 'aaa': # Add and Another
+            return redirect(url_for('spending.spending_add'))
     else:
         cats = get_category()
         subCats = get_subCategory()
@@ -111,3 +126,48 @@ def spending_add():
         return render_template('spending/add_spending.html', settings=settings)
 
 
+@bp.route('/<int:card>/add', methods=('GET', 'POST'))
+def spending_add_from_card(card):
+    if request.method == 'POST':
+        name = request.form['name']
+        amount = float(request.form['amount'])
+        sub_id = request.form['sub_category']
+        cat_id = get_subCategory(sub_id, False)['c_id']
+        date = request.form['date']
+        degree_id = request.form['degree']
+        comments = request.form['comments']
+        mode = request.form['mode']
+
+        year = int(date[-4:])
+        mbar = date.index('/')
+        month = int(date[:mbar])
+        dbar = date[mbar + 1:].index('/')
+        day = int(date[mbar + 1:mbar + dbar + 1])
+
+        balance = get_card_balance(card)['cur_balance']
+        balance += amount
+
+        db = get_db()
+        db.execute(
+            'INSERT INTO spending (name, amount, category, sub_category, yr, mon, daynum, card, degree, comments)'
+            ' VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+            (name, amount, cat_id, sub_id, year, month, day, card, degree_id, comments)
+        )
+        db.commit()
+        db.execute(
+            'UPDATE cards SET cur_balance = ?'
+            ' WHERE id = ?',
+            (balance, card)
+        )
+        db.commit()
+        if mode == 'com':  # Add and Complete
+            return redirect(url_for('index.index'))
+        elif mode == 'aaa':  # Add and Another
+            return redirect(url_for('spending.spending_add_from_card', card=card))
+    else:
+        cats = get_category()
+        subCats = get_subCategory()
+        degrees = get_degree()
+        card_info = get_card(card, False)
+        settings = {'cats': cats, 'subCats': subCats, 'cards': card_info, 'degrees': degrees}
+        return render_template('spending/add_card_spending.html', settings=settings)

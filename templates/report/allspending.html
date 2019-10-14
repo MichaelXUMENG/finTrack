@@ -5,54 +5,47 @@
     <title>Title</title>
 </head>
 <body>
+<header id="header">
+    <div class="inner">
+        <nav id="nav">
+            <a href="{{ url_for('index.index') }}">Home</a>
+            <a href="{{ url_for('report.view_all_spending') }}">Reports</a>
+            {% block nav%}{% endblock %}
+        </nav>
+        <a href="#navPanel" class="navPanelToggle"><span class="fa fa-bars"></span></a>
+    </div>
+</header>
 <form>
-    {% for item in spendings %}
-    <div>
-        ID: <br>
-        {{ item['id'] }}
-    </div>
-    <div>
-        Name: <br>
-        {{ item['name'] }}
-    </div>
-    <div>
-        Amount: <br>
-        {{ item['amount'] }}
-    </div>
-    <div>
-        Category: <br>
-        {{ item['category'] }}
-    </div>
-    <div>
-        Sub-Category: <br>
-        {{ item['sub_category'] }}
-    </div>
-    <div>
-        Year: <br>
-        {{ item['yr'] }}
-    </div>
-    <div>
-        Month: <br>
-        {{ item['mon'] }}
-    </div>
-    <div>
-        Day: <br>
-        {{ item['daynum'] }}
-    </div>
-    <div>
-        Card: <br>
-        {{ item['card'] }}
-    </div>
-    <div>
-        Degree: <br>
-        {{ item['degree'] }}
-    </div>
-    <div>
-        Comment: <br>
-        {{ item['comments'] }}
-    </div>
-    <br><br><br><br><br>
-    {% endfor %}
+    <table stype="width:100%" cellspacing="40">
+        <tr>
+            <th>ID</th>
+            <th>Name</th>
+            <th>Amount</th>
+            <th>Category</th>
+            <th>Sub-Category</th>
+            <th>Year</th>
+            <th>Month</th>
+            <th>Day</th>
+            <th>Card</th>
+            <th>Degree</th>
+            <th>Comments</th>
+        </tr>
+        {% for item in spendings %}
+        <tr>
+            <td>{{ item['id'] }}</td>
+            <td>{{ item['name'] }}</td>
+            <td>{{ item['amount'] }}</td>
+            <td>{{ cats[item['category']] }}</td>
+            <td>{{ subs[item['sub_category']] }}</td>
+            <td>{{ item['yr'] }}</td>
+            <td>{{ item['mon'] }}</td>
+            <td>{{ item['daynum'] }}</td>
+            <td><a href="{{ url_for('report.view_all_spending_card', card=item['card']) }}">{{ cards[item['card']] }}</a></td>
+            <td>{{ degrees[item['degree']] }}</td>
+            <td>{{ item['comments'] }}</td>
+        </tr>
+        {% endfor %}
+    </table>
 </form>
 </body>
 </html>

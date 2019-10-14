@@ -6,7 +6,7 @@
         <div class="wrap-contact2">
             <form class="contact2-form validate-form" method="post">
                 <span class="contact2-form-title">
-                    View Card: {{ card['name'] }}
+                    View Card: {{ card['name'] + ' - ' + card['bank'] }}
                 </span>
 
                 <div class="wrap-input2 validate-input">
@@ -35,6 +35,14 @@
                         <div class="contact2-form-bgbtn"></div>
                         <a href="{{ url_for('setting.card_edit', id=card['id']) }}" class="contact2-form-btn">
                             Edit
+                        </a>
+                    </div>
+                </div>
+                <div class="container-contact2-form-btn">
+                    <div class="wrap-contact2-form-btn">
+                        <div class="contact2-form-bgbtn"></div>
+                        <a href="{{ url_for('report.view_all_spending_card', card=card['id']) }}" class="contact2-form-btn">
+                            View Report
                         </a>
                     </div>
                 </div>

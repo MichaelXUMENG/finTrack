@@ -26,7 +26,7 @@
                     <select name="default_card">
                         <option value=""></option>
                         {% for card in cards %}
-                            <option value="{{ card['id'] }}">{{ card['name'] }}</option>
+                            <option value="{{ card['id'] }}">{{ card['name'] + ' - ' + card['bank'] }}</option>
                         {% endfor %}
                     </select>
                 </div>

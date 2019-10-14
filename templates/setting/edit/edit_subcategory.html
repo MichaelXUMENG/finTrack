@@ -38,9 +38,9 @@
                     <select name="default_card">
                         {% for card in cards %}
                             {% if card['id']==sub_category['default_card'] %}
-                                <option value="{{ card['id'] }}" selected>{{ card['name'] }}</option>
+                                <option value="{{ card['id'] }}" selected>{{ card['name'] + ' - ' + card['bank'] }}</option>
                             {% else %}
-                                <option value="{{ card['id'] }}">{{ card['name'] }}</option>
+                                <option value="{{ card['id'] }}">{{ card['name'] + ' - ' + card['bank'] }}</option>
                             {% endif %}
                         {% endfor %}
                     </select>

@@ -1,0 +1,7 @@
+{% extends 'spending/add_spending.html' %}
+{% block card %}
+<div class="wrap-input100 bg1 rs1-wrap-input100">
+    <span class="label-input100">Card *</span>
+    <input class="input100" type="text" value="{{ settings['cards']['name'] + ' - ' + settings['cards']['bank'] }}" readonly>
+</div>
+{% endblock %}

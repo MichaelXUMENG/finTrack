@@ -15,7 +15,7 @@
 					<nav id="nav">
 						<a href="{{ url_for('index.index') }}">Home</a>
 						<a href="{{ url_for('setting.catalog') }}">Settings</a>
-						<a href="{{ url_for('report.view_all_spending') }}">Reports</a>
+						<a href="{{ url_for('report.catalog') }}">Reports</a>
 					</nav>
 					<a href="#navPanel" class="navPanelToggle"><span class="fa fa-bars"></span></a>
 				</div>
@@ -52,6 +52,15 @@
 
 					<footer>
 						<a href="{{ url_for('spending.spending_add') }}" class="button">Record a Spending</a>
+						<div class="dropdown">
+							<div class="button">Record a Spending with card</div>
+							<div class="dropdown-content">
+								{% for c in cards %}
+    							<a href="{{ url_for('spending.spending_add_from_card', card=c['id'] ) }}">{{ c['name'] + ' - ' + c['bank'] }}</a>
+								{% endfor %}
+  							</div>
+						</div>
+
 					</footer>
 				</div>
 			</section>
@@ -82,7 +91,7 @@
 							</header>
 							<p>You can review the reports designed fo you, <br />or you can design the report in the way you like, <br /> by pointing and clicking.</p>
 							<footer>
-								<a href="#" class="button">Learn More</a>
+								<a href="{{ url_for('report.view_all_spending') }}" class="button">Learn More</a>
 							</footer>
 						</article>
 					</div>

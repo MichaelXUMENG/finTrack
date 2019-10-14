@@ -24,7 +24,7 @@ CREATE TABLE cards (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     bank TEXT NOT NULL,
     name TEXT UNIQUE NOT NULL,
-    cur_balance INTEGER,
+    cur_balance REAL,
     pay_date INTEGER
 );
 
@@ -36,7 +36,7 @@ CREATE TABLE degrees (
 CREATE TABLE spending (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT NOT NULL,
-    amount INTEGER NOT NULL,
+    amount REAL NOT NULL,
     category INTEGER NOT NULL,
     sub_category INTEGER NOT NULL,
     yr INTEGER NOT NULL,

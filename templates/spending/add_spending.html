@@ -14,15 +14,15 @@
                 <span class="label-input100">Spending Title *</span>
                 <input class="input100" type="text" name="name" placeholder="Spending Title" required>
             </div>
-            <div class="wrap-input100 validate-input bg1" data-validate="Please enter spending name">
+            <div class="wrap-input100 validate-input bg1" data-validate="Please enter the Amount of spending">
                 <span class="label-input100">Amount *</span>
-                <input class="input100" type="number" name="amount" placeholder="$##.##" required>
+                <input class="input100" type="number" name="amount" placeholder="$##.##" required step="0.01">
             </div>
 
             <div class="wrap-input100 input100-select bg1">
                 <span class="label-input100">Category *</span>
                 <div>
-                    <select class="js-select2" name="sub_category">
+                    <select class="js-select2" name="sub_category" required>
                         <option value="">Choose a Category</option>
                         {% for cat in settings['cats'] %}
                         <optgroup label="{{ cat['name'] }}">
@@ -38,23 +38,25 @@
                 </div>
             </div>
 
-            <div class="wrap-input100 validate-input bg1" data-validate="Please enter spending name">
+            <div class="wrap-input100 validate-input bg1" data-validate="Please Enter date as format: MM/DD/YYYY">
                 <span class="label-input100">Spending Date *</span>
                 <input class="input100" type="date" name="date" placeholder="MM/DD/YYYY" required>
             </div>
 
+            {% block card %}
             <div class="wrap-input100 bg1 rs1-wrap-input100">
                 <span class="label-input100">Card *</span>
                 <div>
                     <select class="js-select2" name="card" required>
                         <option value="">Please Choose a Card</option>
                         {% for card in settings['cards'] %}
-                        <option value="{{ card['id'] }}">{{ card['name'] }}</option>
+                        <option value="{{ card['id'] }}">{{ card['name'] + ' - ' + card['bank'] }}</option>
                         {% endfor %}
                     </select>
                     <div class="dropDownSelect2"></div>
                 </div>
             </div>
+            {% endblock %}
             <div class="wrap-input100 bg1 rs1-wrap-input100">
                 <span class="label-input100">Degree</span>
                 <div>

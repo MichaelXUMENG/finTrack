@@ -53,7 +53,7 @@
 
 			$(".js-select2").each(function(){
 				$(this).on('select2:close', function (e){
-					if($(this).val() == "Please chooses") {
+					if($(this).val() == "") {
 						$('.js-show-service').slideUp();
 					}
 					else {

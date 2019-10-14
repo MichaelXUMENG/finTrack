@@ -107,23 +107,16 @@ def catalog():
 def category_add():
     if request.method == 'POST':
         cat_name = request.form['name']
-        flash(cat_name)
-        error = None
 
-        if not cat_name:
-            error = "Name is required."
+        db = get_db()
+        db.execute(
+            'INSERT INTO categories (name)'
+            ' VALUES (?)',
+            (cat_name,)
+        )
+        db.commit()
+        return redirect(url_for('setting.catalog'))
 
-        if error is not None:
-            flash(error)
-        else:
-            db = get_db()
-            db.execute(
-                'INSERT INTO categories (name)'
-                ' VALUES (?)',
-                (cat_name,)
-            )
-            db.commit()
-            return redirect(url_for('setting.catalog'))
     return render_template('setting/add_category.html')
 
 
@@ -138,21 +131,15 @@ def category_edit(cid):
     cat = get_category(cid, False)
     if request.method == 'POST':
         cat_name = request.form['name']
-        error = None
 
-        if not cat_name:
-            error = 'Category Name is Required!'
-        if error is not None:
-            flash(error)
-        else:
-            db = get_db()
-            db.execute(
-                'UPDATE categories SET name = ?'
-                ' WHERE id = ?',
-                (cat_name, cid)
-            )
-            db.commit()
-            return redirect(url_for('setting.category_view', cid=cid))
+        db = get_db()
+        db.execute(
+            'UPDATE categories SET name = ?'
+            ' WHERE id = ?',
+            (cat_name, cid)
+        )
+        db.commit()
+        return redirect(url_for('setting.category_view', cid=cid))
     else:
         return render_template('setting/edit/edit_category.html', category=cat)
 
@@ -164,24 +151,15 @@ def sub_category_add(cid):
         cat_id = request.form['c_id']
         card = request.form['default_card']
         degree = request.form['default_degree']
-        error = None
 
-        if not sub_name:
-            error = "Name is required."
-        if not cat_id:
-            error = "Must link to a Category"
-
-        if error is not None:
-            flash(error)
-        else:
-            db = get_db()
-            db.execute(
-                'INSERT INTO sub_categories (name, c_id, default_card, default_degree)'
-                ' VALUES (?, ?, ?, ?)',
-                (sub_name, cat_id, card, degree)
-            )
-            db.commit()
-            return redirect(url_for('setting.catalog'))
+        db = get_db()
+        db.execute(
+            'INSERT INTO sub_categories (name, c_id, default_card, default_degree)'
+            ' VALUES (?, ?, ?, ?)',
+            (sub_name, cat_id, card, degree)
+        )
+        db.commit()
+        return redirect(url_for('setting.catalog'))
     else:
         cat = get_category(cid, False)
         cards = get_card()
@@ -198,10 +176,10 @@ def sub_category_view(sid):
         ' WHERE s.id = ?',
         (sid,)
     ).fetchone()
-    subCat=dict(sub)
+    subCat = dict(sub)
     if subCat['default_card']:
         card = get_card(subCat['default_card'], False)
-        subCat['default_card'] = card['name']
+        subCat['default_card'] = card['name'] + ' - ' + card['bank']
     if subCat['default_degree']:
         degree = get_degree(subCat['default_degree'], False)
         subCat['default_degree'] = degree['name']
@@ -215,24 +193,15 @@ def sub_category_edit(sid):
         cat_id = request.form['c_id']
         card = request.form['default_card']
         degree = request.form['default_degree']
-        error = None
 
-        if not sub_name:
-            error = "Name is required."
-        if not cat_id:
-            error = "Must link to a Category"
-
-        if error is not None:
-            flash(error)
-        else:
-            db = get_db()
-            db.execute(
-                'UPDATE sub_categories SET name = ?, c_id=?, default_card=?, default_degree=?'
-                ' WHERE id = ?',
-                (sub_name, cat_id, card, degree, sid)
-            )
-            db.commit()
-            return redirect(url_for('setting.sub_category_view', sid=sid))
+        db = get_db()
+        db.execute(
+            'UPDATE sub_categories SET name = ?, c_id=?, default_card=?, default_degree=?'
+            ' WHERE id = ?',
+            (sub_name, cat_id, card, degree, sid)
+        )
+        db.commit()
+        return redirect(url_for('setting.sub_category_view', sid=sid))
     else:
         subCat = get_subCategory(sid, False)
         cat = get_category()
@@ -247,24 +216,18 @@ def card_add():
     if request.method == 'POST':
         card_name = request.form['name']
         bank_name = request.form['bank']
-        pay_date = request.form['pay_day']
-        balance = request.form['balance']
-        error = None
+        pay_date = int(request.form['pay_day'])
+        balance = int(request.form['balance'])
 
-        if not card_name:
-            error = 'Card Name is required.'
+        db = get_db()
+        db.execute(
+            'INSERT INTO cards (name, bank, cur_balance, pay_date)'
+            ' VALUES (?, ?, ?, ?)',
+            (card_name, bank_name, balance, pay_date)
+        )
+        db.commit()
+        return redirect(url_for('setting.catalog'))
 
-        if error is not None:
-            flash(error)
-        else:
-            db = get_db()
-            db.execute(
-                'INSERT INTO cards (name, bank, cur_balance, pay_date)'
-                ' VALUES (?, ?, ?, ?)',
-                (card_name, bank_name, balance, pay_date)
-            )
-            db.commit()
-            return redirect(url_for('setting.catalog'))
     return render_template('setting/add_card.html')
 
 
@@ -280,24 +243,17 @@ def card_edit(id):
     if request.method == 'POST':
         card_name = request.form['name']
         bank_name = request.form['bank']
-        pay_date = request.form['pay_day']
-        balance = request.form['balance']
-        error = None
+        pay_date = int(request.form['pay_day'])
+        balance = int(request.form['balance'])
 
-        if not card_name:
-            error = 'Card Name is required.'
-
-        if error is not None:
-            flash(error)
-        else:
-            db = get_db()
-            db.execute(
-                'UPDATE cards SET name = ?, bank=?, cur_balance=?, pay_date=?'
-                ' WHERE id = ?',
-                (card_name, bank_name, pay_date, balance, id)
-            )
-            db.commit()
-            return redirect(url_for('setting.card_view', id=id))
+        db = get_db()
+        db.execute(
+            'UPDATE cards SET name = ?, bank=?, cur_balance=?, pay_date=?'
+            ' WHERE id = ?',
+            (card_name, bank_name, pay_date, balance, id)
+        )
+        db.commit()
+        return redirect(url_for('setting.card_view', id=id))
     else:
         return render_template('setting/edit/edit_card.html', card=card)
 
@@ -306,22 +262,16 @@ def card_edit(id):
 def degree_add():
     if request.method == 'POST':
         degree_name = request.form['name']
-        error = None
 
-        if not degree_name:
-            error = 'Degree Name is required.'
+        db = get_db()
+        db.execute(
+            'INSERT INTO degrees (name)'
+            ' VALUES (?)',
+            (degree_name,)
+        )
+        db.commit()
+        return redirect(url_for('setting.catalog'))
 
-        if error is not None:
-            flash(error)
-        else:
-            db = get_db()
-            db.execute(
-                'INSERT INTO degrees (name)'
-                ' VALUES (?)',
-                (degree_name,)
-            )
-            db.commit()
-            return redirect(url_for('setting.catalog'))
     return render_template('setting/add_degree.html')
 
 
@@ -336,21 +286,14 @@ def degree_edit(id):
     degree = get_degree(id, False)
     if request.method == 'POST':
         degree_name = request.form['name']
-        error = None
 
-        if not degree_name:
-            error = 'Degree Name is required.'
-
-        if error is not None:
-            flash(error)
-        else:
-            db = get_db()
-            db.execute(
-                'UPDATE degrees SET name = ?'
-                ' WHERE id = ?',
-                (degree_name, id)
-            )
-            db.commit()
-            return redirect(url_for('setting.degree_view', id=id))
+        db = get_db()
+        db.execute(
+            'UPDATE degrees SET name = ?'
+            ' WHERE id = ?',
+            (degree_name, id)
+        )
+        db.commit()
+        return redirect(url_for('setting.degree_view', id=id))
     else:
         return render_template('setting/edit/edit_degree.html', degree=degree)

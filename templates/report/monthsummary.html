@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+Monthly Total Spending:
+{{ sum['sum'] }}
+<br>
+<form>
+    <table stype="width:100%" cellspacing="40">
+        <tr>
+            <th>Category Name</th>
+            <th>Total</th>
+        </tr>
+        {% for cat in cat_sum %}
+        <tr>
+            <td>{{ cats[cat['category']] }}</td>
+            <td>{{ cat['sum'] }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+</form>
+
+</body>
+</html>
