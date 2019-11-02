@@ -6,97 +6,126 @@
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
 		<link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}" />
 	</head>
-	<body>
 
+	<body>
 		<!-- Header -->
-			<header id="header">
-				<div class="inner">
-					<a href="{{ url_for('index.index') }}" class="logo"><strong>System</strong> by Michael</a>
-					<nav id="nav">
-						<a href="{{ url_for('index.index') }}">Home</a>
-						<a href="{{ url_for('setting.catalog') }}">Settings</a>
-						<a href="{{ url_for('report.catalog') }}">Reports</a>
-					</nav>
-					<a href="#navPanel" class="navPanelToggle"><span class="fa fa-bars"></span></a>
-				</div>
-			</header>
+		<header id="header">
+			<div class="inner">
+				<a href="{{ url_for('index.index') }}" class="logo"><strong>System</strong> by Michael</a>
+				<nav id="nav">
+					<a href="{{ url_for('index.index') }}">Home</a>
+					<a href="{{ url_for('setting.catalog') }}">Settings</a>
+					<a href="{{ url_for('report.catalog') }}">Reports</a>
+				</nav>
+				<a href="#navPanel" class="navPanelToggle"><span class="fa fa-bars"></span></a>
+			</div>
+		</header>
 
 		<!-- Banner -->
-			<section id="banner">
-				<div class="inner">
-					<header>
-						<h1>Welcome to Michael's Financial Tracker</h1>
-					</header>
+		<section id="banner">
+			<div class="inner">
+				<header>
+					<h1>Welcome to Michael's Financial Tracker</h1>
+				</header>
 
-					<div class="flex ">
+				<div class="flex ">
 
-						<div>
-							<span class="icon fa-car"></span>
-							<h3>Fast</h3>
-							<p>Collects data within a GUI page</p>
-						</div>
-
-						<div>
-							<span class="icon fa-camera"></span>
-							<h3>Visualize</h3>
-							<p>Build reports based on your data</p>
-						</div>
-
-						<div>
-							<span class="icon fa-bug"></span>
-							<h3>Flexible</h3>
-							<p>Update your setting anytime</p>
-						</div>
-
+					<div>
+						<span class="icon fa-car"></span>
+						<h3>Fast</h3>
+						<p>Collects data within a GUI page</p>
 					</div>
 
-					<footer>
-						<a href="{{ url_for('spending.spending_add') }}" class="button">Record a Spending</a>
-						<div class="dropdown">
-							<div class="button">Record a Spending with card</div>
-							<div class="dropdown-content">
-								{% for c in cards %}
-    							<a href="{{ url_for('spending.spending_add_from_card', card=c['id'] ) }}">{{ c['name'] + ' - ' + c['bank'] }}</a>
-								{% endfor %}
-  							</div>
-						</div>
+					<div>
+						<span class="icon fa-camera"></span>
+						<h3>Visualize</h3>
+						<p>Build reports based on your data</p>
+					</div>
 
-					</footer>
+					<div>
+						<span class="icon fa-bug"></span>
+						<h3>Flexible</h3>
+						<p>Update your setting anytime</p>
+					</div>
+
 				</div>
-			</section>
+
+				<footer>
+					<a href="{{ url_for('spending.spending_add') }}" class="button">Record a Spending</a>
+					<div class="dropdown">
+						<div class="button">Record a Spending with card</div>
+						<div class="dropdown-content">
+							{% for c in cards %}
+							<a href="{{ url_for('spending.spending_add_from_card', card=c['id'] ) }}">{{ c['name'] + ' - ' + c['bank'] }}</a>
+							{% endfor %}
+						</div>
+					</div>
+
+				</footer>
+			</div>
+		</section>
 
 
 		<!-- Three -->
-			<section id="three" class="wrapper align-center">
-				<div class="inner">
-					<div class="flex flex-2">
-						<article>
-							<div class="image round">
-								<img src="{{ url_for('static', filename='images/bulb.png') }}" alt="Pic 01" />
-							</div>
-							<header>
-								<h3>Setting<br /> Configure what you want to capture</h3>
-							</header>
-							<p>In setting page, you can create the fields <br />you want to capture in each input,<br />and you can also modify the existing settings</p>
-							<footer>
-								<a href="{{ url_for('setting.catalog') }}" class="button">Learn More</a>
-							</footer>
-						</article>
-						<article>
-							<div class="image round">
-								<img src="{{ url_for('static', filename='images/report2.jpg') }}" alt="Pic 02" />
-							</div>
-							<header>
-								<h3>Report<br /> Display data in the way you like</h3>
-							</header>
-							<p>You can review the reports designed fo you, <br />or you can design the report in the way you like, <br /> by pointing and clicking.</p>
-							<footer>
-								<a href="{{ url_for('report.view_all_spending') }}" class="button">Learn More</a>
-							</footer>
-						</article>
-					</div>
+		<section id="three" class="wrapper align-center">
+			<div class="inner">
+				<div class="flex flex-2">
+					<article>
+						<div class="image round">
+							<img src="{{ url_for('static', filename='images/bulb.png') }}" alt="Pic 01" />
+						</div>
+						<header>
+							<h3>Setting<br /> Configure what you want to capture</h3>
+						</header>
+						<p>In setting page, you can create the fields <br />you want to capture in each input,<br />and you can also modify the existing settings</p>
+						<footer>
+							<a href="{{ url_for('setting.catalog') }}" class="button">Learn More</a>
+						</footer>
+					</article>
+					<article>
+						<div class="image round">
+							<img src="{{ url_for('static', filename='images/report2.jpg') }}" alt="Pic 02" />
+						</div>
+						<header>
+							<h3>Report<br /> Display data in the way you like</h3>
+						</header>
+						<p>You can review the reports designed fo you, <br />or you can design the report in the way you like, <br /> by pointing and clicking.</p>
+						<footer>
+							<a href="{{ url_for('report.view_all_spending') }}" class="button">Learn More</a>
+						</footer>
+					</article>
 				</div>
-			</section>
+			</div>
+		</section>
+
+		<section id="three" class="wrapper align-center">
+			<div class="inner">
+				<div class="flex flex-2">
+					<article>
+						<div class="image round">
+							<img src="{{ url_for('static', filename='images/backup.png') }}" alt="Pic 01" />
+						</div>
+						<header>
+							<h3>Backup<br /> Setting and Spending data</h3>
+						</header>
+						<footer>
+							<a href="{{ url_for('backup.data_backup') }}" class="button">Start Backup</a>
+						</footer>
+					</article>
+					<article>
+						<div class="image round">
+							<img src="{{ url_for('static', filename='images/restore.png') }}" alt="Pic 02" />
+						</div>
+						<header>
+							<h3>Restore<br /> From last backup</h3>
+						</header>
+						<footer>
+							<a href="{{ url_for('backup.data_restore') }}" class="button">Restore</a>
+						</footer>
+					</article>
+				</div>
+			</div>
+		</section>
 
 		<!-- Footer -->
 		<!--

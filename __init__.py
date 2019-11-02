@@ -2,7 +2,7 @@ import os
 
 from flask import Flask
 from . import db
-from . import index, setting, spending, report
+from . import index, setting, spending, report, backup_data, graphReport
 
 def create_app(test_config=None):
     # Create and configure the application
@@ -11,6 +11,7 @@ def create_app(test_config=None):
         SECRET_KEY='dev',
         DATABASE=os.path.join(app.instance_path, 'finTrack.sqlite'),
     )
+    #print(os.environ.get("SECRET_EMAILP"))
     if test_config is None:
         # load the instance config, if it exists, when not testing
         app.config.from_pyfile('config.py', silent=True)
@@ -34,5 +35,7 @@ def create_app(test_config=None):
     app.register_blueprint(setting.bp)
     app.register_blueprint(spending.bp)
     app.register_blueprint(report.bp)
+    app.register_blueprint(backup_data.bp)
+    app.register_blueprint(graphReport.bp)
 
     return app

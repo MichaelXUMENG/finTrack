@@ -78,6 +78,16 @@ def get_degree():
     return degrees
 
 
+def get_spendings(id):
+    spending = get_db().execute(
+        'SELECT id, name, amount, category, sub_category, yr, mon, daynum, card, degree, comments'
+        ' FROM spending'
+        ' WHERE id = ?',
+        (id,)
+    ).fetchone()
+    return spending
+
+
 @bp.route('/add', methods=('GET', 'POST'))
 def spending_add():
     if request.method == 'POST':
@@ -92,10 +102,16 @@ def spending_add():
         mode = request.form['mode']
 
         year = int(date[-4:])
-        mbar = date.index('/')
-        month = int(date[:mbar])
-        dbar = date[mbar+1:].index('/')
-        day = int(date[mbar+1:mbar+dbar+1])
+        if '/' in date:
+            mbar = date.index('/')
+            month = int(date[:mbar])
+            dbar = date[mbar+1:].index('/')
+            day = int(date[mbar+1:mbar+dbar+1])
+        else:
+            mbar = date.index('-')
+            month = int(date[:mbar])
+            dbar = date[mbar + 1:].index('-')
+            day = int(date[mbar + 1:mbar + dbar + 1])
 
         balance = get_card_balance(card_id)['cur_balance']
         balance += amount
@@ -139,10 +155,16 @@ def spending_add_from_card(card):
         mode = request.form['mode']
 
         year = int(date[-4:])
-        mbar = date.index('/')
-        month = int(date[:mbar])
-        dbar = date[mbar + 1:].index('/')
-        day = int(date[mbar + 1:mbar + dbar + 1])
+        if '/' in date:
+            mbar = date.index('/')
+            month = int(date[:mbar])
+            dbar = date[mbar + 1:].index('/')
+            day = int(date[mbar + 1:mbar + dbar + 1])
+        else:
+            mbar = date.index('-')
+            month = int(date[:mbar])
+            dbar = date[mbar + 1:].index('-')
+            day = int(date[mbar + 1:mbar + dbar + 1])
 
         balance = get_card_balance(card)['cur_balance']
         balance += amount
@@ -171,3 +193,55 @@ def spending_add_from_card(card):
         card_info = get_card(card, False)
         settings = {'cats': cats, 'subCats': subCats, 'cards': card_info, 'degrees': degrees}
         return render_template('spending/add_card_spending.html', settings=settings)
+
+
+@bp.route('/<int:id>/eidt/', methods=('GET', 'POST'))
+def spending_edit(id):
+    if request.method == 'POST':
+        name = request.form['name']
+        amount = float(request.form['amount'])
+        sub_id = request.form['sub_category']
+        cat_id = get_subCategory(sub_id, False)['c_id']
+        date = request.form['date']
+        card_id = request.form['card']
+        degree_id = request.form['degree']
+        comments = request.form['comments']
+
+        year = int(date[-4:])
+        if '/' in date:
+            mbar = date.index('/')
+            month = int(date[:mbar])
+            dbar = date[mbar + 1:].index('/')
+            day = int(date[mbar + 1:mbar + dbar + 1])
+        else:
+            mbar = date.index('-')
+            month = int(date[:mbar])
+            dbar = date[mbar + 1:].index('-')
+            day = int(date[mbar + 1:mbar + dbar + 1])
+
+        balance = get_card_balance(card_id)['cur_balance']
+        balance += amount
+
+        db = get_db()
+        db.execute(
+            'UPDATE spending SET name=?, amount=?, category=?, sub_category=?, yr=?, mon=?, daynum=?, card=?, degree=?, comments=?'
+            ' WHERE id=?',
+            (name, amount, cat_id, sub_id, year, month, day, card_id, degree_id, comments, id)
+        )
+        db.commit()
+        db.execute(
+            'UPDATE cards SET cur_balance = ?'
+            ' WHERE id = ?',
+            (balance, card_id)
+        )
+        db.commit()
+        return redirect(url_for('report.view_all_spending'))
+    else:
+        cats = get_category()
+        subCats = get_subCategory()
+        cards = get_card()
+        degrees = get_degree()
+        spending = get_spendings(id)
+        date = str(spending['mon'])+'/'+str(spending['daynum'])+'/'+str(spending['yr'])
+        settings = {'cats': cats, 'subCats': subCats, 'cards': cards, 'degrees': degrees}
+        return render_template('spending/edit_spending.html', settings=settings, spending=spending, date=date)

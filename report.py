@@ -1,8 +1,6 @@
-import functools
 from flask import(
-    Blueprint, flash, g, redirect, render_template, request, session, url_for
+    Blueprint, flash, g, redirect, render_template, request, session, url_for, Response
 )
-from werkzeug.exceptions import abort
 from finTrack.db import get_db
 
 bp = Blueprint('report', __name__, url_prefix='/report')
@@ -47,6 +45,23 @@ def get_category_month(month):
         ' ORDER BY SUM(amount) DESC',
         (month,)
     ).fetchall()
+    return summary
+
+
+def get_annual_sum():
+    summary = get_db().execute(
+        'SELECT ROUND(SUM(amount), 2) as sum, mon'
+        ' FROM spending'
+        ' GROUP BY mon'
+        ' ORDER BY mon'
+    ).fetchall()
+    return summary
+
+def get_all_spending():
+    summary = get_db().execute(
+        'SELECT ROUND(SUM(amount), 2) as sum'
+        ' FROM spending'
+    ).fetchone()
     return summary
 
 
@@ -145,5 +160,11 @@ def view_monthly_summary(month):
     cats = {}
     for pair in get_category():
         cats[pair['id']] = pair['name']
-    return render_template("report/monthsummary.html", sum=sum, cat_sum=cat_sum, cats=cats)
+    return render_template("report/monthsummary.html", sum=sum, cat_sum=cat_sum, cats=cats, month=month)
 
+
+@bp.route('/currentyear')
+def view_annual_summary():
+    sum = get_annual_sum()
+    allAmount = get_all_spending()
+    return render_template("report/annualReport.html", sum=sum, amount=allAmount)

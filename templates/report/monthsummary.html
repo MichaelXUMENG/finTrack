@@ -5,7 +5,7 @@
     <title>Title</title>
 </head>
 <body>
-Monthly Total Spending:
+Monthly Total Spending of {{ month }}:
 {{ sum['sum'] }}
 <br>
 <form>
@@ -22,6 +22,8 @@ Monthly Total Spending:
         {% endfor %}
     </table>
 </form>
+
+<img src="/graph/{{ month }}/monthReport.png" alt="Monthly Report" />
 
 </body>
 </html>
