@@ -1,0 +1,12 @@
+body {
+    background-color: white;
+}
+.inner {
+    padding: 8em 0 9em 0;
+    background-color: lightgray;
+    background-size: cover;
+}
+#nav {
+    text-align: right;
+    color: red;
+}

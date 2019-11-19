@@ -3,29 +3,31 @@
 <head>
     <meta charset="UTF-8">
     <title>Report Catalog Page</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/report/main.css') }}" />
 </head>
 <body>
-<header id="header">
-    <div class="inner">
-        <nav id="nav">
-            <a href="{{ url_for('index.index') }}">Home</a>
-            <a href="{{ url_for('report.catalog') }}">Reports</a>
-            {% block nav%}{% endblock %}
-        </nav>
-        <a href="#navPanel" class="navPanelToggle"><span class="fa fa-bars"></span></a>
-    </div>
-</header>
+    <header id="header">
+        <div class="inner">
+            <nav id="nav">
+                <a href="{{ url_for('index.index') }}">Home</a>
+                <a href="{{ url_for('setting.catalog') }}">Settings</a>
+                <a href="{{ url_for('report.catalog') }}">Reports</a>
+                {% block nav%}{% endblock %}
+            </nav>
+            <a href="#navPanel" class="navPanelToggle"><span class="fa fa-bars"></span></a>
+        </div>
+    </header>
 
-<a href="{{ url_for('report.view_all_spending') }}">All Spending Reports</a>
-<br>
-Monthly Summary
-<ul>
-    {% for m in months %}
-    <li><a href="{{ url_for('report.view_monthly_summary', month=m['mon']) }}">{{ m['mon'] }}</a></li>
-    {% endfor %}
-</ul>
-<br>
-<a href="{{ url_for('report.view_annual_summary') }}">YTD Summary</a>
-
+    <a href="{{ url_for('report.view_all_spending') }}">All Spending Reports</a>
+    <br>
+    Monthly Summary
+    <ul>
+        {% for m in months %}
+        <li><a href="{{ url_for('report.view_monthly_summary', month=m['mon']) }}">{{ m['mon'] }}</a></li>
+        {% endfor %}
+    </ul>
+    <br>
+    <a href="{{ url_for('report.view_annual_summary') }}">YTD Summary</a>
 </body>
 </html>
