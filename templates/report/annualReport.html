@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Annual Summary Report</title>
+</head>
+<body>
+Annually Total Spending:
+{{ amount['sum'] }}
+<br>
+<form>
+    <table stype="width:100%" cellspacing="40">
+        <tr>
+            <th>Month</th>
+            <th>Total</th>
+        </tr>
+        {% for monsum in sum %}
+        <tr>
+            <td>{{ monsum['mon'] }}</td>
+            <td>{{ monsum['sum'] }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+</form>
+
+<img src="/graph/annualReport.png" alt="Annual Report" />
+<br>
+<img src="/graph/utilityReport.png" alt="Utility Report" />
+<br>
+<img src="/graph/eatingReport.png" alt="Food and Grocery Report" />
+<br>
+<img src="/graph/groceryReport.png" alt="Grocery Report" />
+<img src="/graph/foodReport.png" alt="Restaurant Report" />
+
+</body>
+</html>

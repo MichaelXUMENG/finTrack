@@ -9,7 +9,7 @@
     <div class="inner">
         <nav id="nav">
             <a href="{{ url_for('index.index') }}">Home</a>
-            <a href="{{ url_for('report.view_all_spending') }}">Reports</a>
+            <a href="{{ url_for('report.catalog') }}">Reports</a>
             {% block nav%}{% endblock %}
         </nav>
         <a href="#navPanel" class="navPanelToggle"><span class="fa fa-bars"></span></a>
@@ -32,7 +32,7 @@
         </tr>
         {% for item in spendings %}
         <tr>
-            <td>{{ item['id'] }}</td>
+            <td><a href="{{ url_for('spending.spending_edit', id=item['id']) }}">{{ item['id'] }}</td>
             <td>{{ item['name'] }}</td>
             <td>{{ item['amount'] }}</td>
             <td>{{ cats[item['category']] }}</td>
