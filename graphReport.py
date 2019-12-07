@@ -15,7 +15,10 @@ def annualReport():
     con = engine.connect()
     monthly = con.execute('SELECT SUM(amount) as summary, mon' +
                           ' FROM spending' +
-                          ' GROUP BY mon ORDER BY mon')
+                          ' WHERE category!=?' +
+                          ' GROUP BY mon ORDER BY mon',
+                          (16,)
+                          )
     df_monthly = pd.DataFrame(monthly.fetchall())
     df_monthly.columns = monthly.keys()
     con.close()
@@ -38,8 +41,9 @@ def monthReport(month):
     con = engine.connect()
     summary = con.execute('SELECT SUM(amount) as summary, c.name' +
                           ' FROM spending LEFT JOIN categories AS c on category = c.id' +
-                          ' WHERE mon=? GROUP BY category ORDER BY SUM(amount) DESC',
-                          (month,)
+                          ' WHERE mon=? and category!=?' +
+                          ' GROUP BY category ORDER BY SUM(amount) DESC',
+                          (month,16,)
                           )
     df_summary = pd.DataFrame(summary.fetchall())
     df_summary.columns = summary.keys()
