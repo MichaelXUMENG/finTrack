@@ -53,7 +53,8 @@ def monthReport(month):
     colors = ['#ff9999', '#66b3ff', '#99ff99', '#ffcc99', '#ffc4d8', '#9bf6ff', '#ffe39e', '#ffd3b8', '#e9fba6',
               '#adebad', '#99ffeb']
     fig = Figure()
-    axis = fig.add_subplot(1, 1, 1, title=title)
+    axis = fig.add_subplot(1, 1, 1)
+    fig.suptitle(title, fontsize=16)
     # start drawing the pie chart
     """
     fig1, ax1 = plt.subplots()
@@ -68,9 +69,9 @@ def monthReport(month):
     plt.tight_layout()
     plt.show()
     """
-    explode = [0.2] * len(df_summary.index)
+    explode = [0.1] * len(df_summary.index)
     axis.pie(df_summary['summary'], colors=colors, labels=df_summary['name'],
-            autopct='%1.1f%%', startangle=90, explode=explode, radius=1)
+            autopct='%1.1f%%', startangle=180, explode=explode, radius=1)
     output = io.BytesIO()
     FigureCanvas(fig).print_png(output)
     return Response(output.getvalue(), mimetype='image/png')

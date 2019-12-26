@@ -1,51 +1,42 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Title</title>
-</head>
-<body>
-<header id="header">
-    <div class="inner">
-        <nav id="nav">
-            <a href="{{ url_for('index.index') }}">Home</a>
-            <a href="{{ url_for('report.catalog') }}">Reports</a>
-            {% block nav%}{% endblock %}
-        </nav>
-        <a href="#navPanel" class="navPanelToggle"><span class="fa fa-bars"></span></a>
+{% extends 'report_base.html' %}
+{% block title %}All Spending Report{% endblock %}
+
+{% block content %}
+<div class="detail">
+    <div class="catsum">
+        <form>
+            <table stype="width:100%" cellspacing="40">
+                <tr>
+                    <th>ID</th>
+                    <th>Name</th>
+                    <th>Amount</th>
+                    <th>Category</th>
+                    <th>Sub-Category</th>
+                    <th>Year</th>
+                    <th>Month</th>
+                    <th>Day</th>
+                    <th>Card</th>
+                    <th>Degree</th>
+                    <th>Comments</th>
+                </tr>
+                {% for item in spendings %}
+                <tr>
+                    <td><a href="{{ url_for('spending.spending_edit', id=item['id']) }}">{{ item['id'] }}</td>
+                    <td>{{ item['name'] }}</td>
+                    <td>{{ item['amount'] }}</td>
+                    <td>{{ cats[item['category']] }}</td>
+                    <td>{{ subs[item['sub_category']] }}</td>
+                    <td>{{ item['yr'] }}</td>
+                    <td>{{ item['mon'] }}</td>
+                    <td>{{ item['daynum'] }}</td>
+                    <td><a href="{{ url_for('report.view_all_spending_card', card=item['card']) }}">{{ cards[item['card']] }}</a></td>
+                    <td>{{ degrees[item['degree']] }}</td>
+                    <td>{{ item['comments'] }}</td>
+                </tr>
+                {% endfor %}
+            </table>
+        </form>
     </div>
-</header>
-<form>
-    <table stype="width:100%" cellspacing="40">
-        <tr>
-            <th>ID</th>
-            <th>Name</th>
-            <th>Amount</th>
-            <th>Category</th>
-            <th>Sub-Category</th>
-            <th>Year</th>
-            <th>Month</th>
-            <th>Day</th>
-            <th>Card</th>
-            <th>Degree</th>
-            <th>Comments</th>
-        </tr>
-        {% for item in spendings %}
-        <tr>
-            <td><a href="{{ url_for('spending.spending_edit', id=item['id']) }}">{{ item['id'] }}</td>
-            <td>{{ item['name'] }}</td>
-            <td>{{ item['amount'] }}</td>
-            <td>{{ cats[item['category']] }}</td>
-            <td>{{ subs[item['sub_category']] }}</td>
-            <td>{{ item['yr'] }}</td>
-            <td>{{ item['mon'] }}</td>
-            <td>{{ item['daynum'] }}</td>
-            <td><a href="{{ url_for('report.view_all_spending_card', card=item['card']) }}">{{ cards[item['card']] }}</a></td>
-            <td>{{ degrees[item['degree']] }}</td>
-            <td>{{ item['comments'] }}</td>
-        </tr>
-        {% endfor %}
-    </table>
-</form>
-</body>
-</html>
+</div>
+
+{% endblock %}

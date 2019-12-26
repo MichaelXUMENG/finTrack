@@ -1,33 +1,39 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Report Catalog Page</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/report/main.css') }}" />
-</head>
-<body>
-    <header id="header">
-        <div class="inner">
-            <nav id="nav">
-                <a href="{{ url_for('index.index') }}">Home</a>
-                <a href="{{ url_for('setting.catalog') }}">Settings</a>
-                <a href="{{ url_for('report.catalog') }}">Reports</a>
-                {% block nav%}{% endblock %}
-            </nav>
-            <a href="#navPanel" class="navPanelToggle"><span class="fa fa-bars"></span></a>
-        </div>
-    </header>
+{% extends 'report_base.html' %}
+{% block title %}Report Catalog Page{% endblock %}
 
+{% block content %}
+    <!--
     <a href="{{ url_for('report.view_all_spending') }}">All Spending Reports</a>
+    -->
     <br>
-    Monthly Summary
-    <ul>
-        {% for m in months %}
-        <li><a href="{{ url_for('report.view_monthly_summary', month=m['mon']) }}">{{ m['mon'] }}</a></li>
-        {% endfor %}
-    </ul>
+    <div class="scrolling-section">
+        <h3>Card Spending Transactions</h3>
+        <div class="scrolling">
+            {% for card in cards %}
+            <div class="item itemcard">
+                <h4>{{ card['name'] }}</h4>
+                <a href="{{ url_for('report.view_all_spending_card', card=card['id']) }}"><img src="{{ url_for('static', filename='images/report/'+card['name']+'.jpeg') }}" alt="" /></a>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
     <br>
-    <a href="{{ url_for('report.view_annual_summary') }}">YTD Summary</a>
-</body>
-</html>
+    <div class="detail">
+        <div class="catsum scrolling-section">
+            <h3>Yearly Summary</h3>
+            <div class="scrolling">
+                {% for y in years %}
+                <div class="item itemcard">
+                    <h4>{{ y['yr'] }} Summary</h4>
+                    <a href="{{ url_for('report.view_annual_summary', year=y['yr']) }}"><img src="{{ url_for('static', filename='images/report/'+y['yr']|string+'.jpg') }}" alt="" /></a>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        <div class="catgraph"></div>
+    </div>
+
+
+
+{% endblock %}

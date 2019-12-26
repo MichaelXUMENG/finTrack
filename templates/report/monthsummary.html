@@ -1,29 +1,36 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Title</title>
-</head>
-<body>
-Monthly Total Spending of {{ month }}:
-{{ sum['sum'] }}
-<br>
-<form>
-    <table stype="width:100%" cellspacing="40">
-        <tr>
-            <th>Category Name</th>
-            <th>Total</th>
-        </tr>
-        {% for cat in cat_sum %}
-        <tr>
-            <td>{{ cats[cat['category']] }}</td>
-            <td>{{ cat['sum'] }}</td>
-        </tr>
-        {% endfor %}
-    </table>
-</form>
+{% extends 'report_base.html' %}
+{% block title %}Month Summary{% endblock %}
 
-<img src="/graph/{{ month }}/monthReport.png" alt="Monthly Report" />
+{% block content %}
+    <h1> {{ month }} of Year {{ year }}</h1>
+    <h2>Total Spending:
+    {{ sum['sum'] }}
+    </h2>
+    <br>
+    <div class="detail">
+        <div class="catsum">
+            <form>
+                <table>
+                    <tr>
+                        <th>Category Name</th>
+                        <th>Total</th>
+                    </tr>
+                    {% for cat in cat_sum %}
+                    <tr>
+                        <td>{{ cats[cat['category']] }}</td>
+                        <td>
+                            <a href="{{ url_for('report.monthlyCatTransaction', year=year, month=month, category=cat['category'] ) }}">
+                                {{ cat['sum'] }}
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </table>
+            </form>
+        </div>
+        <div class="catgraph">
+            <img src="/graph/{{ month }}/monthReport.png" alt="Monthly Report" />
+        </div>
+    </div>
 
-</body>
-</html>
+{% endblock %}
