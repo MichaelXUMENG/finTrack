@@ -19,7 +19,7 @@ def get_spendings():
 
 def get_doc_spending():
     doc_spendings = get_db().execute(
-        'SELECT id, name, amount, category, sub_category, yr, mon, daynum, card, degree, comments'
+        'SELECT id, name, amount, sub_category, yr, mon, daynum, card, degree, comments'
         ' FROM spending'
         ' WHERE category=?'
         ' ORDER BY yr DESC, mon DESC, daynum DESC, card',
@@ -95,11 +95,11 @@ def get_all_spending(year):
 
 def get_mon_doc_sum():
     doc_summary = get_db().execute(
-        'SELECT ROUND(SUM(amount), 2) as sum, mon'
+        'SELECT ROUND(SUM(amount), 2) as sum, yr, mon'
         ' FROM spending'
         ' WHERE category=?'
-        ' GROUP BY mon'
-        ' ORDER BY mon',
+        ' GROUP BY yr, mon'
+        ' ORDER BY yr, mon',
         (16,)
     ).fetchall()
     return doc_summary
@@ -272,3 +272,33 @@ def monthlyCatTransaction(year, month, category):
         degrees[pair['id']] = pair['name']
     return render_template("report/monthCatTransaction.html", transactions=transactions, catNm=catNm, subs=subs,
                            cards=cards, degrees=degrees, year=year, month=month, totalSpending=totalSpending)
+
+
+@bp.route('/doctor')
+def doctorSummary():
+    transactions = get_doc_spending()
+    monthSummary = get_mon_doc_sum()
+    totalSpending = get_db().execute(
+        'SELECT ROUND(SUM(amount), 2) as sum'
+        ' FROM spending'
+        ' WHERE category=?',
+        (16,)
+    ).fetchone()['sum']
+    subCat = get_db().execute(
+        'SELECT id, name'
+        ' FROM sub_categories'
+        ' WHERE c_id=?'
+        ' ORDER BY id',
+        (16,)
+    ).fetchall()
+    subs = {}
+    cards = {}
+    degrees = {}
+    for pair in subCat:
+        subs[pair['id']] = pair['name']
+    for pair in get_card():
+        cards[pair['id']] = pair['name']
+    for pair in get_degree():
+        degrees[pair['id']] = pair['name']
+    return render_template("report/doctorSummary.html", transactions=transactions, monthSummary=monthSummary,
+                           totalSpending=totalSpending, subs=subs, cards=cards, degrees=degrees)
