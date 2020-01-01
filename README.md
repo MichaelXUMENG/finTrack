@@ -20,3 +20,5 @@ flask run
 flask run --host=0.0.0.0    
 
 export SECRET_EMAILP='your from email password'
+
+The email service python code cannot be saved as 'email.py', because the email.py will prevent the services from smtplib to be working.
