@@ -12,3 +12,13 @@ It's better to have Python 3 installed
 The 'DROP TABLE IF EXIST tablename' statement in 'schema.sql' means if the table exist then drop the table.
 To initialize the database, run **flask init-db** (This command also erase all the existing data). 
 
+## To run the application ##
+
+export FLASK_APP=finTrack   
+export FLASK_ENV=development    
+flask run   
+flask run --host=0.0.0.0    
+
+export SECRET_EMAILP='your from email password'
+
+The email service python code cannot be saved as 'email.py', because the email.py will prevent the services from smtplib to be working.

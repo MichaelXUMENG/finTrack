@@ -529,7 +529,7 @@ textarea.input100 {
 
 .select2-container .select2-results__option[aria-selected] {
   padding-top: 10px;
-  padding-bottom: 10px;
+  padding-bottom: 0px;
   padding-left: 24px;
 }
 
