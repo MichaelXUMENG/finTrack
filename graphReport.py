@@ -9,15 +9,15 @@ from flask import Blueprint, Response
 bp = Blueprint('graph', __name__, url_prefix='/graph')
 
 
-@bp.route('/annualReport.png')
-def annualReport():
+@bp.route('/<int:year>/annualReport.png')
+def annualReport(year):
     engine = create_engine("sqlite:///instance/finTrack.sqlite")
     con = engine.connect()
     monthly = con.execute('SELECT SUM(amount) as summary, mon' +
                           ' FROM spending' +
-                          ' WHERE category!=?' +
+                          ' WHERE yr=? and category!=?' +
                           ' GROUP BY mon ORDER BY mon',
-                          (16,)
+                          (year, 16,)
                           )
     df_monthly = pd.DataFrame(monthly.fetchall())
     df_monthly.columns = monthly.keys()
@@ -43,7 +43,7 @@ def monthReport(month):
                           ' FROM spending LEFT JOIN categories AS c on category = c.id' +
                           ' WHERE mon=? and category!=?' +
                           ' GROUP BY category ORDER BY SUM(amount) DESC',
-                          (month,16,)
+                          (month, 16,)
                           )
     df_summary = pd.DataFrame(summary.fetchall())
     df_summary.columns = summary.keys()
@@ -77,23 +77,27 @@ def monthReport(month):
     return Response(output.getvalue(), mimetype='image/png')
 
 
-@bp.route('/utilityReport.png')
-def utilityReport():
+@bp.route('/<int:year>/utilityReport.png')
+def utilityReport(year):
     engine = create_engine("sqlite:///instance/finTrack.sqlite")
     con = engine.connect()
     # Select each utility category's total amount of each month
     utility = con.execute('SELECT SUM(amount) as summary, s.name, mon' +
                           ' FROM spending LEFT JOIN sub_categories AS s on sub_category=s.id' +
-                          ' WHERE category=3'
-                          ' GROUP BY sub_category, mon ORDER BY mon')
+                          ' WHERE yr=? and category=3'
+                          ' GROUP BY sub_category, mon ORDER BY mon',
+                          (year,)
+                          )
     df_utility = pd.DataFrame(utility.fetchall())
     df_utility.columns = utility.keys()
 
     # Select the total amount of utility of each month
     utility_total = con.execute('SELECT SUM(amount) as summary, mon' +
                                 ' FROM spending' +
-                                ' WHERE category=3'
-                                ' GROUP BY mon ORDER BY mon')
+                                ' WHERE yr=? and category=3'
+                                ' GROUP BY mon ORDER BY mon',
+                                (year,)
+                                )
     df_utility_total = pd.DataFrame(utility_total.fetchall())
     df_utility_total.columns = utility_total.keys()
     con.close()
@@ -145,23 +149,27 @@ def utilityReport():
     return Response(output.getvalue(), mimetype='image/png')
 
 
-@bp.route('/eatingReport.png')
-def eatingReport():
+@bp.route('/<int:year>/eatingReport.png')
+def eatingReport(year):
     engine = create_engine("sqlite:///instance/finTrack.sqlite")
     con = engine.connect()
     # Select Food and Grocery total amount of each month
     food = con.execute('SELECT SUM(amount) as summary, c.name, mon' +
                        ' FROM spending LEFT JOIN categories AS c on category=c.id' +
-                       ' WHERE category=2 or category=6'
-                       ' GROUP BY category, mon ORDER BY mon')
+                       ' WHERE yr=? and (category=2 or category=6)'
+                       ' GROUP BY category, mon ORDER BY mon',
+                       (year,)
+                       )
     df_food = pd.DataFrame(food.fetchall())
     df_food.columns = food.keys()
 
     # Select the total amount of both Food and Grocery of each month
     food_total = con.execute('SELECT SUM(amount) as summary, mon' +
                              ' FROM spending' +
-                             ' WHERE category=2 or category=6'
-                             ' GROUP BY mon ORDER BY mon')
+                             ' WHERE yr=? and (category=2 or category=6)'
+                             ' GROUP BY mon ORDER BY mon',
+                             (year,)
+                             )
     df_food_total = pd.DataFrame(food_total.fetchall())
     df_food_total.columns = food_total.keys()
     con.close()
@@ -194,15 +202,17 @@ def eatingReport():
     return Response(output.getvalue(), mimetype='image/png')
 
 
-@bp.route('/groceryReport.png')
-def groceryReport():
+@bp.route('/<int:year>/groceryReport.png')
+def groceryReport(year):
     engine = create_engine("sqlite:///instance/finTrack.sqlite")
     con = engine.connect()
     # Select Food and Grocery total amount of each month
     food = con.execute('SELECT SUM(amount) as summary, c.name, mon' +
                        ' FROM spending LEFT JOIN categories AS c on category=c.id' +
-                       ' WHERE category=2 or category=6'
-                       ' GROUP BY category, mon ORDER BY mon')
+                       ' WHERE yr=? and (category=2 or category=6)'
+                       ' GROUP BY category, mon ORDER BY mon',
+                       (year,)
+                       )
     df_food = pd.DataFrame(food.fetchall())
     df_food.columns = food.keys()
     con.close()
@@ -227,15 +237,17 @@ def groceryReport():
     return Response(output.getvalue(), mimetype='image/png')
 
 
-@bp.route('/foodReport.png')
-def foodReport():
+@bp.route('/<int:year>/foodReport.png')
+def foodReport(year):
     engine = create_engine("sqlite:///instance/finTrack.sqlite")
     con = engine.connect()
     # Select Food and Grocery total amount of each month
     food = con.execute('SELECT SUM(amount) as summary, c.name, mon' +
                        ' FROM spending LEFT JOIN categories AS c on category=c.id' +
-                       ' WHERE category=2 or category=6'
-                       ' GROUP BY category, mon ORDER BY mon')
+                       ' WHERE yr=? and (category=2 or category=6)'
+                       ' GROUP BY category, mon ORDER BY mon',
+                       (year,)
+                       )
     df_food = pd.DataFrame(food.fetchall())
     df_food.columns = food.keys()
     con.close()
