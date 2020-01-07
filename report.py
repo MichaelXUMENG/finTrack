@@ -213,6 +213,31 @@ def view_all_spending_card(card):
                            card_id=card, degrees=degrees)
 
 
+@bp.route('/<int:card>/addcardspending')
+def add_spending_card(card):
+    spendings = get_db().execute(
+        'SELECT id, name, amount, category, sub_category, yr, mon, daynum, card, degree, comments'
+        ' FROM spending'
+        ' WHERE card = ?'
+        ' ORDER BY yr DESC, mon DESC, daynum DESC, card',
+        (card,)
+    ).fetchall()
+    cats = {}
+    subs = {}
+    cards = {}
+    degrees = {}
+    for pair in get_category():
+        cats[pair['id']] = pair['name']
+    for pair in get_subcat():
+        subs[pair['id']] = pair['name']
+    for pair in get_card():
+        cards[pair['id']] = pair['name']
+    for pair in get_degree():
+        degrees[pair['id']] = pair['name']
+    return render_template("report/cardspending.html", spendings=spendings, cats=cats, subs=subs, cards=cards,
+                           card_id=card, degrees=degrees)
+
+
 @bp.route('/<int:year>/<int:month>')
 def view_monthly_summary(year, month):
     sum = get_sum_month(year, month)

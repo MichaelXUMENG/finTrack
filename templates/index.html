@@ -56,7 +56,7 @@
 						<div class="button">Record a Spending with card</div>
 						<div class="dropdown-content">
 							{% for c in cards %}
-							<a href="{{ url_for('report.view_all_spending_card', card=c['id'] ) }}">{{ c['name'] + ' - ' + c['bank'] }}</a>
+							<a href="{{ url_for('report.add_spending_card', card=c['id'] ) }}">{{ c['name'] + ' - ' + c['bank'] }}</a>
 							{% endfor %}
 						</div>
 					</div>
