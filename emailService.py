@@ -1,10 +1,15 @@
-import smtplib
+from flask_mail import Message
+from apscheduler.schedulers.background import BackgroundScheduler
+import finTrack
 
-subject = "This is a test"
-text = "Sending email from python."
-message = 'Subject: {}\n\n{}'.format(subject, text)
+def emailTest(task_id):
+    msg = Message("Hello, task id is {}".format(task_id),
+                  sender="342049327@qq.com",
+                  recipients=["xumenglove@icloud.com"])
+    finTrack.mail.send(msg)
 
-server = smtplib.SMTP_SSL('smtp.qq.com', 465)
-server.login("342049327@qq.com", "FamilyHappy1989")
-server.sendmail("342049327@qq.com", "xumenglove@icloud.com", message)
-server.quit()
+
+def scheduleEmail():
+    scheduler = BackgroundScheduler()
+    scheduler.add_job(emailTest())
+    scheduler.start()
