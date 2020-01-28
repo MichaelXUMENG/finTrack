@@ -7,6 +7,7 @@ from matplotlib.figure import Figure
 from flask import Blueprint, Response
 
 bp = Blueprint('graph', __name__, url_prefix='/graph')
+months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 
 
 @bp.route('/<int:year>/annualReport.png')
@@ -21,6 +22,8 @@ def annualReport(year):
                           )
     df_monthly = pd.DataFrame(monthly.fetchall())
     df_monthly.columns = monthly.keys()
+    count = len(df_monthly['summary'])
+    startMonth = df_monthly['mon'][0]-1
     con.close()
 
     title = "Totle Spending of each Month in 2019"
@@ -28,8 +31,8 @@ def annualReport(year):
     xlabel = "Month"
     fig = Figure()
     axis = fig.add_subplot(1, 1, 1, title=title, xlabel=xlabel, ylabel=ylabel, ylim=(0, 10000))
-    axis.plot(df_monthly['mon'], df_monthly['summary'])
-    axis.scatter(df_monthly['mon'], df_monthly['summary'])
+    axis.plot(months[startMonth:startMonth+count], df_monthly['summary'])
+    axis.scatter(months[startMonth:startMonth+count], df_monthly['summary'])
     output = io.BytesIO()
     FigureCanvas(fig).print_png(output)
     return Response(output.getvalue(), mimetype='image/png')
@@ -102,6 +105,9 @@ def utilityReport(year):
     df_utility_total.columns = utility_total.keys()
     con.close()
 
+    u_count = len(df_utility_total['summary'])
+    u_startMonth = df_utility_total['mon'][0] - 1
+
     # save the each utility category into its own variable
     df_water = df_utility[df_utility['name'] == 'Water and Waste']
     df_electricity = df_utility[df_utility['name'] == 'Electricity']
@@ -121,7 +127,13 @@ def utilityReport(year):
         for_mobile += [0]
 
     # set the month from water entry as the default month
-    month = df_water['mon'].tolist()
+    wt_month = df_water['mon'].tolist()
+    wt_start = wt_month[0]-1
+    wt_count = len(wt_month)
+
+    mb_month = df_mobile['mon'].tolist()
+    mb_start = mb_month[0]-1
+    mb_count = len(mb_month)
 
     title="The report of Utility"
     # Add y axis lable and the title
@@ -129,15 +141,15 @@ def utilityReport(year):
     fig = Figure()
     axis = fig.add_subplot(1, 1, 1, title=title, ylabel=ylabel)
     # stack each utility category onto the previous one
-    pw = axis.bar(month, df_water['summary'], width=0.35, color='#66b3ff')
-    pe = axis.bar(month, df_electricity['summary'], width=0.35, bottom=for_electrisity, color='#ff9999')
-    pi = axis.bar(month, df_internet['summary'], width=0.35, bottom=for_internet, color='#99ff99')
-    pg = axis.bar(month, df_gas['summary'], width=0.35, bottom=for_gas, color='#ffcc99')
-    pm = axis.bar(df_mobile['mon'].tolist(), df_mobile['summary'], width=0.35, bottom=for_mobile, color='#9bf6ff')
+    pw = axis.bar(months[wt_start:wt_start+wt_count], df_water['summary'], width=0.35, color='#66b3ff')
+    pe = axis.bar(months[wt_start:wt_start+wt_count], df_electricity['summary'], width=0.35, bottom=for_electrisity, color='#ff9999')
+    pi = axis.bar(months[wt_start:wt_start+wt_count], df_internet['summary'], width=0.35, bottom=for_internet, color='#99ff99')
+    pg = axis.bar(months[wt_start:wt_start+wt_count], df_gas['summary'], width=0.35, bottom=for_gas, color='#ffcc99')
+    pm = axis.bar(months[mb_start:mb_start+mb_count], df_mobile['summary'], width=0.35, bottom=for_mobile, color='#9bf6ff')
 
     # Then add the line and point onto the plot
-    axis.plot(df_utility_total['mon'], df_utility_total['summary'])
-    axis.scatter(df_utility_total['mon'], df_utility_total['summary'])
+    axis.plot(months[u_startMonth:u_startMonth+u_count], df_utility_total['summary'])
+    axis.scatter(months[u_startMonth:u_startMonth+u_count], df_utility_total['summary'])
 
     # add the color mapping
     axis.legend((pw[0], pe[0], pi[0], pg[0], pm[0]),
@@ -182,6 +194,9 @@ def eatingReport(year):
     for_food = df_grocery['summary'].tolist()
 
     month = df_grocery['mon'].tolist()
+    count = len(month)
+    startMonth = month[0] - 1
+
     title = "Total Spending of Food and Grocery in 2019"
     ylabel = "Dolors"
     xlabel = "Month"
@@ -189,10 +204,10 @@ def eatingReport(year):
     # Then add the line and point onto the plot
     fig = Figure()
     axisB = fig.add_subplot(1, 1, 1, title=title, xlabel=xlabel, ylabel=ylabel, ylim=(0, 1500))
-    pg = axisB.bar(month, df_grocery['summary'], 0.35, color='#66b3ff')
-    pf = axisB.bar(month, df_food['summary'], 0.35, bottom=for_food, color='#ff9999')
-    axisB.plot(df_food_total['mon'], df_food_total['summary'])
-    axisB.scatter(df_food_total['mon'], df_food_total['summary'])
+    pg = axisB.bar(months[startMonth:startMonth+count], df_grocery['summary'], 0.35, color='#66b3ff')
+    pf = axisB.bar(months[startMonth:startMonth+count], df_food['summary'], 0.35, bottom=for_food, color='#ff9999')
+    axisB.plot(months[startMonth:startMonth+count], df_food_total['summary'])
+    axisB.scatter(months[startMonth:startMonth+count], df_food_total['summary'])
 
     # add the color mapping
     axisB.legend((pg[0], pf[0]), ('Grocery', 'Food'))
@@ -221,6 +236,8 @@ def groceryReport(year):
     df_grocery = df_food[df_food['name'] == 'Grocery']
 
     month = df_grocery['mon'].tolist()
+    count = len(month)
+    startMonth = month[0] - 1
 
     # Plot for Grocery Only
     fig = Figure()
@@ -228,9 +245,9 @@ def groceryReport(year):
     ylabel = "Dolors"
     xlabel = "Month"
     axisG = fig.add_subplot(1, 1, 1, title=title, xlabel=xlabel, ylabel=ylabel, ylim=(0, 1000))
-    axisG.bar(month, df_grocery['summary'], 0.35, color='#66b3ff')
-    axisG.plot(df_grocery['mon'], df_grocery['summary'])
-    axisG.scatter(df_grocery['mon'], df_grocery['summary'])
+    axisG.bar(months[startMonth:startMonth+count], df_grocery['summary'], 0.35, color='#66b3ff')
+    axisG.plot(months[startMonth:startMonth+count], df_grocery['summary'])
+    axisG.scatter(months[startMonth:startMonth+count], df_grocery['summary'])
 
     output = io.BytesIO()
     FigureCanvas(fig).print_png(output)
@@ -256,6 +273,8 @@ def foodReport(year):
     df_food = df_food[df_food['name'] == 'Food']
 
     month = df_food['mon'].tolist()
+    count = len(month)
+    startMonth = month[0] - 1
 
     # Plot for Grocery Only
     fig = Figure()
@@ -264,9 +283,9 @@ def foodReport(year):
     xlabel = "Month"
     # Plot for Food Only
     axisF = fig.add_subplot(1, 1, 1, title=title, xlabel=xlabel, ylabel=ylabel, ylim=(0, 1000))
-    axisF.bar(month, df_food['summary'], 0.35, color='#ff9999')
-    axisF.plot(df_food['mon'], df_food['summary'])
-    axisF.scatter(df_food['mon'], df_food['summary'])
+    axisF.bar(months[startMonth:startMonth+count], df_food['summary'], 0.35, color='#ff9999')
+    axisF.plot(months[startMonth:startMonth+count], df_food['summary'])
+    axisF.scatter(months[startMonth:startMonth+count], df_food['summary'])
 
     output = io.BytesIO()
     FigureCanvas(fig).print_png(output)
