@@ -2,102 +2,21 @@ import functools
 from flask import(
     Blueprint, flash, g, redirect, render_template, request, session, url_for
 )
-from werkzeug.exceptions import abort
+from .db_utils import (
+    get_all_category, get_one_category, get_all_subCategory, get_one_subCategory, get_all_cards, get_one_card,
+    get_all_degrees, get_one_degree
+)
 from finTrack.db import get_db
 
 bp = Blueprint('setting', __name__, url_prefix='/setting')
 
 
-def get_category(cat_id=0, fet_all=True):
-    if fet_all:
-        cat = get_db().execute(
-            'SELECT id, name'
-            ' FROM categories'
-            ' ORDER BY name'
-        ).fetchall()
-    else:
-        cat = get_db().execute(
-            'SELECT id, name'
-            ' FROM categories'
-            ' WHERE id = ?',
-            (cat_id,)
-        ).fetchone()
-
-    if cat is None:
-        abort(404, "Category id {0} doesn't exist.".format(cat_id))
-
-    return cat
-
-
-def get_subCategory(sub_id=0, fet_all=True):
-    if fet_all:
-        subCat = get_db().execute(
-            'SELECT id, name, c_id, default_card, default_degree'
-            ' FROM sub_categories'
-            ' ORDER BY name'
-        ).fetchall()
-    else:
-        subCat = get_db().execute(
-            'SELECT id, name, c_id, default_card, default_degree'
-            ' FROM sub_categories'
-            ' WHERE id = ?',
-            (sub_id,)
-        ).fetchone()
-
-    if subCat is None:
-        abort(404, "Sub-Category id {0} doesn't exist.".format(sub_id))
-
-    return subCat
-
-
-def get_card(card_id=0, fet_all=True):
-    if fet_all:
-        card = get_db().execute(
-            'SELECT id, name, bank, cur_balance, pay_date'
-            ' FROM cards'
-            ' ORDER BY bank, name'
-        ).fetchall()
-    else:
-        card = get_db().execute(
-            'SELECT id, name, bank, cur_balance, pay_date'
-            ' FROM cards'
-            ' WHERE id = ?',
-            (card_id,)
-        ).fetchone()
-
-    if card is None:
-        abort(404, "Card id {0} doesn't exist.".format(card_id))
-
-    return card
-
-
-def get_degree(card_id=0, fet_all=True):
-    if fet_all:
-        degree = get_db().execute(
-            'SELECT id, name'
-            ' FROM degrees'
-            ' ORDER BY name'
-        ).fetchall()
-    else:
-        degree = get_db().execute(
-            'SELECT id, name'
-            ' FROM degrees'
-            ' WHERE id = ?',
-            (card_id,)
-        ).fetchone()
-
-    if degree is None:
-        abort(404, "Degree id {0} doesn't exist.".format(card_id))
-
-    return degree
-
-
 @bp.route('/')
 def catalog():
-    categories = get_category()
-    sub_categories = get_subCategory()
-    cards = get_card()
-    degrees = get_degree()
+    categories = get_all_category()
+    sub_categories = get_all_subCategory()
+    cards = get_all_cards()
+    degrees = get_all_degrees()
 
     settings = {'cat': categories, 'sub': sub_categories, 'card': cards, 'degree': degrees}
     return render_template('setting/catalog.html', settings=settings)
@@ -122,13 +41,13 @@ def category_add():
 
 @bp.route('/category/<int:cid>/view')
 def category_view(cid):
-    cat = get_category(cid, False)
+    cat = get_one_category(cid)
     return render_template('setting/view/view_category.html', category=cat)
 
 
 @bp.route('/category/<int:cid>/edit', methods=('GET', 'POST'))
 def category_edit(cid):
-    cat = get_category(cid, False)
+    cat = get_one_category(cid)
     if request.method == 'POST':
         cat_name = request.form['name']
 
@@ -161,9 +80,9 @@ def sub_category_add(cid):
         db.commit()
         return redirect(url_for('setting.catalog'))
     else:
-        cat = get_category(cid, False)
-        cards = get_card()
-        degrees = get_degree()
+        cat = get_one_category(cid)
+        cards = get_all_cards()
+        degrees = get_all_degrees()
         return render_template('setting/add_subcategory.html', category=cat, cards=cards, degrees=degrees)
 
 
@@ -178,10 +97,10 @@ def sub_category_view(sid):
     ).fetchone()
     subCat = dict(sub)
     if subCat['default_card']:
-        card = get_card(subCat['default_card'], False)
+        card = get_one_card(subCat['default_card'])
         subCat['default_card'] = card['name'] + ' - ' + card['bank']
     if subCat['default_degree']:
-        degree = get_degree(subCat['default_degree'], False)
+        degree = get_one_degree(subCat['default_degree'])
         subCat['default_degree'] = degree['name']
     return render_template('setting/view/view_subcategory.html', sub_category=subCat)
 
@@ -203,10 +122,10 @@ def sub_category_edit(sid):
         db.commit()
         return redirect(url_for('setting.sub_category_view', sid=sid))
     else:
-        subCat = get_subCategory(sid, False)
-        cat = get_category()
-        cards = get_card()
-        degrees = get_degree()
+        subCat = get_one_subCategory(sid)
+        cat = get_all_category()
+        cards = get_all_cards()
+        degrees = get_all_degrees()
         return render_template('setting/edit/edit_subcategory.html',
                                sub_category=subCat, category=cat, cards=cards, degrees=degrees)
 
@@ -233,13 +152,13 @@ def card_add():
 
 @bp.route('/card/<int:id>/view')
 def card_view(id):
-    card = get_card(id, False)
+    card = get_one_card(id)
     return render_template('setting/view/view_card.html', card=card)
 
 
 @bp.route('/card/<int:id>/edit', methods=('GET', 'POST'))
 def card_edit(id):
-    card = get_card(id, False)
+    card = get_one_card(id)
     if request.method == 'POST':
         card_name = request.form['name']
         bank_name = request.form['bank']
@@ -277,13 +196,13 @@ def degree_add():
 
 @bp.route('/degree/<int:id>/view')
 def degree_view(id):
-    degree = get_degree(id, False)
+    degree = get_one_degree(id)
     return render_template('setting/view/view_degree.html', degree=degree)
 
 
 @bp.route('/degree/<int:id>/edit', methods=('GET', 'POST'))
 def degree_edit(id):
-    degree = get_degree(id, False)
+    degree = get_one_degree(id)
     if request.method == 'POST':
         degree_name = request.form['name']
 
