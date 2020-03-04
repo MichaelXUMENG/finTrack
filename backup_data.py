@@ -60,13 +60,21 @@ def restore_backup():
 
 @bp.route('/data')
 def data_backup():
-    pull_write_data()
-    print("Data has been backed up.")
-    return redirect(url_for('index.index'))
+    try:
+        pull_write_data()
+        flash('All Spending and Setting data have been backed up!', 'success')
+    except Exception as e:
+        flash(e, 'error')
+    finally:
+        return redirect(url_for('index.index'))
 
 
 @bp.route('/restore')
 def data_restore():
-    restore_backup()
-    print("Data has been restored!")
-    return redirect(url_for('index.index'))
+    try:
+        restore_backup()
+        flash('Data has been restored!', 'success')
+    except Exception as e:
+        flash(e, 'error')
+    finally:
+        return redirect(url_for('index.index'))

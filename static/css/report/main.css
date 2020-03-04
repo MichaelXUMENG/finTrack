@@ -114,5 +114,10 @@ main {
 			top: 0.25em;
 		}
 
-
+.flashes .error{
+    background-color: #FFCCCB;
+}
+.flashes .success{
+    background-color: #D0F0C0;
+}
 
