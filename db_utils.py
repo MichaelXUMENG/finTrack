@@ -85,6 +85,17 @@ def get_one_card(card_id=0):
     return card
 
 
+def get_card_by_name(card_name):
+    card_info = card_name.split(' - ')
+    card = get_db().execute(
+        'SELECT id, name, bank, cur_balance, pay_date'
+        ' FROM cards'
+        ' WHERE name = ? and bank = ?',
+        (card_info[0], card_info[1])
+    ).fetchone()
+    return card
+
+
 def get_all_degrees(order='name'):
     degrees = get_db().execute(
         'SELECT id, name'

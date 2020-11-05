@@ -1,13 +1,16 @@
 import functools
+import os
+import re
 from flask import(
-    Blueprint, flash, g, redirect, render_template, request, session, url_for
+    Blueprint, flash, g, redirect, render_template, request, session, url_for, current_app, after_this_request
 )
 from .db_utils import (
     get_all_category, get_all_subCategory, get_one_subCategory, get_all_cards, get_one_card,
-    get_all_degrees, get_one_spending
+    get_all_degrees, get_one_spending, get_card_by_name
 )
 from finTrack.db import get_db
-
+from .read_in_pdf_statement import read_pdf_statement_chase_credit, read_pdf_statement_chase_checking
+from werkzeug.utils import secure_filename
 bp = Blueprint('spending', __name__, url_prefix='/spending')
 
 
@@ -132,6 +135,80 @@ def spending_add_from_card(card):
         except Exception as e:
             flash(e, 'error')
             return redirect(url_for('index.index'))
+
+
+@bp.route('/add/statement', methods=['POST'])
+def spending_add_from_statement():
+    if 'statement_pdf' not in request.files:
+        flash('No file part')
+        return redirect(url_for('index.index'))
+    card = request.form['card']
+    file = request.files['statement_pdf']
+    if file.filename == '':
+        flash('No selected file')
+        return redirect(url_for('index.index'))
+
+    filename = secure_filename(file.filename)
+    path_to_statement = os.path.join(current_app.config['UPLOAD_FOLDER'], filename)
+    file.save(path_to_statement)
+
+    inputs = []
+    if card in ('Freedom - Chase', 'Unlimited - Chase', 'Sapphire - Chase'):
+        inputs = read_pdf_statement_chase_credit(path_to_statement)
+    elif card == 'Checking - Chase':
+        inputs = read_pdf_statement_chase_checking(path_to_statement)
+    # def generate():
+    #     with open(path) as f:
+    #         yield from f
+    #
+    #     os.remove(path)
+
+    os.remove(path_to_statement)
+
+    cats = get_all_category()
+    subCats = get_all_subCategory()
+    degrees = get_all_degrees()
+    settings = {'cats': cats, 'subCats': subCats, 'degrees': degrees}
+
+    return render_template('spending/add_spending_from_statement.html', card=card, inputs=inputs, settings=settings)
+
+
+@bp.route('/save_statement', methods=['POST'])
+def save_statement_data():
+    transaction_counts = int(request.form.get('count', 0))
+    card_name = request.form.get('card', '')
+    card = get_card_by_name(card_name)
+
+    db = get_db()
+    try:
+        for index in range(transaction_counts):
+            single_trans = {
+                'exclude': request.form.get(f'exclude{index+1}', 'False'),
+                'name': request.form.get(f'name{index+1}', 'N/A'),
+                'category': request.form.get(f'category{index+1}', -1),
+                'amount': request.form.get(f'amount{index+1}', 0),
+                'date': request.form.get(f'date{index+1}', '01/01/0101'),
+                'degree': request.form.get(f'degree{index+1}', -1),
+                'note': request.form.get(f'note{index+1}', ''),
+            }
+            if single_trans['exclude'] == 'False':
+                sub_category = get_one_subCategory(single_trans['category'])
+                date_match = re.fullmatch(r"([0-9]{2})/([0-9]{2})/([0-9]{4})", single_trans['date'])
+
+                db.execute(
+                    'INSERT INTO spending (name, amount, category, sub_category, yr, mon, daynum, card, degree, comments)'
+                    ' VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+                    (single_trans['name'], single_trans['amount'], sub_category['c_id'], single_trans['category'],
+                     date_match.group(3), date_match.group(1), date_match.group(2), card['id'], single_trans['degree'],
+                     single_trans['note'])
+                )
+        db.commit()
+        flash(f'{transaction_counts} spendings are added!', 'success')
+        return redirect(url_for('report.add_spending_card', card=card['id']))
+    except TypeError as e:
+        flash(e, 'error')
+        db.rollback()
+        return redirect(url_for('index.index'))
 
 
 @bp.route('/<int:id>/eidt/', methods=('GET', 'POST'))

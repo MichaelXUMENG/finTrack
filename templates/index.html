@@ -14,6 +14,11 @@
 		<meta charset="utf-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
 		<link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}" />
+
+		<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+		<script src="https://code.jquery.com/jquery-3.2.1.slim.min.js" integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN" crossorigin="anonymous"></script>
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js" integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" crossorigin="anonymous"></script>
+		<script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js" integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl" crossorigin="anonymous"></script>
 	</head>
 
 	<body>
@@ -69,6 +74,9 @@
 							{% endfor %}
 						</div>
 					</div>
+					<a data-toggle="modal" rel="tooltip" title="" class="button" data-target="#statement_input_modal">
+						Record Spendings with Statement
+					</a>
 
 				</footer>
 			</div>
@@ -135,6 +143,39 @@
 				</div>
 			</div>
 		</section>
+
+		<!-- Modal -->
+		<div class="modal fade" id="statement_input_modal" tabindex="-1" role="dialog" aria-hidden="true">
+			<div class="modal-dialog modal-lg">
+				<div class="modal-content">
+					<div class="modal-header">
+						<h4 class="modal-title">Choose the card and upload statement</h4>
+						<a class="close" data-dismiss="modal" aria-label="Close">
+							&times;
+						</a>
+					</div>
+					<div class="modal-body">
+						<form action="{{ url_for('spending.spending_add_from_statement') }}" method="post"
+							  enctype="multipart/form-data" class="form-group" id="statement_uploading">
+							<input name="card" list="cards">
+							<datalist id="cards" class="dropdown-content">
+								{% for card in cards %}
+								<option value="{{ card['name'] + ' - ' + card['bank'] }}">
+									{{ card['name'] + ' - ' + card['bank'] }}
+								</option>
+								{% endfor %}
+							</datalist>
+							<br/><br/><br/>
+							<input class="btn btn-default" type="file" name="statement_pdf"/>
+						</form>
+					</div>
+					<div class="modal-footer">
+						<button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+						<button type="submit" form="statement_uploading" class="btn btn-primary">Upload</button>
+					</div>
+				</div>
+			</div>
+		</div>
 
 		<!-- Footer -->
 		<!--
