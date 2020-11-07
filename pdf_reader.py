@@ -1,7 +1,7 @@
 from PyPDF2.pdf import PdfFileReader
 from pdfminer.high_level import extract_text, extract_text_to_fp
 from pdfminer.layout import LAParams
-from io import StringIO
+from io import StringIO, BytesIO
 
 
 def extract_pdf_pypdf2(pdf_path):
