@@ -37,16 +37,6 @@ body {
 table {
     border-collapse: collapse;
 }
-th {
-    background-color: #9bf6ff;
-    color: black;
-}
-th, td {
-    width: 10em;
-    text-align: center;
-    border: 1px solid black;
-    padding: 5% 2em 5% 2em;
-}
 
 main {
     margin-bottom: 4em;
