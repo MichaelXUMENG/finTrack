@@ -9,21 +9,25 @@
     <br>
     <div class="detail">
         <div class="catsum">
-            <form>
-                <table>
+            <table class="table table-hover">
+                <thead class="thead-dark">
                     <tr>
                         <th>Month</th>
                         <th>Total</th>
                     </tr>
+                </thead>
+                <tbody>
                     {% for monsum in sum %}
                     <tr>
                         <td>{{ monsum['mon'] }}</td>
                         <td><a href="{{ url_for('report.view_monthly_summary', year=year, month=monsum['mon']) }}">{{ monsum['sum'] }}</a></td>
                     </tr>
                     {% endfor %}
-                </table>
-            </form>
+                </tbody>
+
+            </table>
         </div>
+        &emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;
         <div class="catgraph">
             <img src="/graph/{{ year }}/annualReport.png" alt="Annual Report" />
         </div>

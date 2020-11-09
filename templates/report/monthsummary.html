@@ -9,12 +9,14 @@
     <br>
     <div class="detail">
         <div class="catsum">
-            <form>
-                <table>
+            <table class="table table-hover">
+                <thead class="thead-dark">
                     <tr>
                         <th>Category Name</th>
                         <th>Total</th>
                     </tr>
+                </thead>
+                <tbody>
                     {% for cat in cat_sum %}
                     <tr>
                         <td>{{ cats[cat['category']] }}</td>
@@ -25,11 +27,13 @@
                         </td>
                     </tr>
                     {% endfor %}
-                </table>
-            </form>
+                </tbody>
+
+            </table>
         </div>
+        &emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;
         <div class="catgraph">
-            <img src="/graph/{{ month }}/monthReport.png" alt="Monthly Report" />
+            <img src="/graph/{{ year }}/{{ month }}/monthReport.png" alt="Monthly Report" />
         </div>
     </div>
 

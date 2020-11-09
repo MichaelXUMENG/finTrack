@@ -2,41 +2,37 @@
 {% block title %}All Spending Report{% endblock %}
 
 {% block content %}
-<div class="detail">
-    <div class="catsum">
-        <form>
-            <table stype="width:100%" cellspacing="40">
-                <tr>
-                    <th>ID</th>
-                    <th>Name</th>
-                    <th>Amount</th>
-                    <th>Category</th>
-                    <th>Sub-Category</th>
-                    <th>Year</th>
-                    <th>Month</th>
-                    <th>Day</th>
-                    <th>Card</th>
-                    <th>Degree</th>
-                    <th>Comments</th>
+<h2>Spending from card</h2>
+
+        <table class="table table-hover table-striped">
+            <thead class="thead-dark">
+                <tr class="form-group row">
+                    <th scope="col">ID</th>
+                    <th scope="col" class="col-4">Name</th>
+                    <th scope="col" class="col-1">Amount</th>
+                    <th scope="col" class="col-2">Category</th>
+                    <th scope="col" class="col-1">Date</th>
+                    <th scope="col" class="col-1">Card</th>
+                    <th scope="col" class="col-1">Degree</th>
+                    <th scope="col" class="col-1">Comments</th>
                 </tr>
+            </thead>
+            <tbody>
                 {% for item in spendings %}
-                <tr>
-                    <td><a href="{{ url_for('spending.spending_edit', id=item['id']) }}">{{ item['id'] }}</td>
-                    <td>{{ item['name'] }}</td>
-                    <td>{{ item['amount'] }}</td>
-                    <td>{{ cats[item['category']] }}</td>
-                    <td>{{ subs[item['sub_category']] }}</td>
-                    <td>{{ item['yr'] }}</td>
-                    <td>{{ item['mon'] }}</td>
-                    <td>{{ item['daynum'] }}</td>
-                    <td><a href="{{ url_for('report.view_all_spending_card', card=item['card']) }}">{{ cards[item['card']] }}</a></td>
-                    <td>{{ degrees[item['degree']] }}</td>
-                    <td>{{ item['comments'] }}</td>
+                <tr class="form-group row">
+                    <td scope="row"><a href="{{ url_for('spending.spending_edit', id=item['id']) }}">{{ item['id'] }}</a></td>
+                    <td class="col-4">{{ item['name'] }}</td>
+                    <td class="col-1">{{ item['amount'] }}</td>
+                    <td class="col-2">{{ cats[item['category']] +': '+ subs[item['sub_category']] }}</td>
+                    <td class="col-1">{{ item['mon']|string +'/'+ item['daynum']|string +'/'+ item['yr']|string }}</td>
+                    <td class="col-1"><a href="{{ url_for('report.view_all_spending_card', card=item['card']) }}">{{ cards[item['card']] }}</a></td>
+                    <td class="col-1">{{ degrees[item['degree']] }}</td>
+                    <td class="col-1">{{ item['comments'] }}</td>
                 </tr>
                 {% endfor %}
-            </table>
-        </form>
-    </div>
-</div>
+            </tbody>
+
+        </table>
+
 
 {% endblock %}
