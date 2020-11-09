@@ -29,7 +29,9 @@
                 </div>
                 <nav id="nav">
                     <a href="{{ url_for('index.index') }}">Home</a>
+                    &ensp;
                     <a href="{{ url_for('setting.catalog') }}">Settings</a>
+                    &ensp;
                     <a href="{{ url_for('report.catalog') }}">Reports</a>
                     {% block nav%}{% endblock %}
                 </nav>

@@ -10,13 +10,15 @@
     <div class="detail">
         <div class="catsum">
             <h3>Monthly Summary</h3>
-            <form>
-                <table>
+            <table class="table table-hover table-striped">
+                <thead class="thead-dark">
                     <tr>
                         <th>Year</th>
                         <th>Month</th>
                         <th>Total</th>
                     </tr>
+                </thead>
+                <tbody>
                     {% for item in monthSummary %}
                     <tr>
                         <td>{{ item['yr'] }}</td>
@@ -24,45 +26,39 @@
                         <td>{{ item['sum'] }}</td>
                     </tr>
                     {% endfor %}
-                </table>
-            </form>
+                </tbody>
+            </table>
         </div>
     </div>
 
-    <div class="detail">
-        <div class="catsum">
-            <h3>Single Transaction</h3>
-            <form>
-                <table>
-                    <tr>
-                        <th>ID</th>
-                        <th>Name</th>
-                        <th>Amount</th>
-                        <th>Sub-Category</th>
-                        <th>Year</th>
-                        <th>Month</th>
-                        <th>Day</th>
-                        <th>Card</th>
-                        <th>Degree</th>
-                        <th>Comments</th>
-                    </tr>
-                    {% for trans in transactions %}
-                    <tr>
-                        <td><a href="{{ url_for('spending.spending_edit', id=trans['id']) }}">{{ trans['id'] }}</td>
-                        <td>{{ trans['name'] }}</td>
-                        <td>{{ trans['amount'] }}</td>
-                        <td>{{ subs[trans['sub_category']] }}</td>
-                        <td>{{ trans['yr'] }}</td>
-                        <td>{{ trans['mon'] }}</td>
-                        <td>{{ trans['daynum'] }}</td>
-                        <td>{{ cards[trans['card']] }}</td>
-                        <td>{{ degrees[trans['degree']] }}</td>
-                        <td>{{ trans['comments'] }}</td>
-                    </tr>
-                    {% endfor %}
-                </table>
-            </form>
-        </div>
-    </div>
+    <h3>Single Transaction</h3>
+    <table class="table table-hover table-striped">
+        <thead class="thead-dark">
+            <tr class="form-group row">
+            <th scope="col" class="col-1">ID</th>
+            <th scope="col" class="col-4">Name</th>
+            <th scope="col" class="col-2">Amount</th>
+            <th scope="col" class="col-1">Category</th>
+            <th scope="col" class="col-1">Date</th>
+            <th scope="col" class="col-1">Card</th>
+            <th scope="col" class="col-1">Degree</th>
+            <th scope="col" class="col-1">Comments</th>
+        </tr>
+        </thead>
+        <tbody>
+            {% for trans in transactions %}
+            <tr class="form-group row">
+                <td scope="row" class="col-1"><a href="{{ url_for('spending.spending_edit', id=trans['id']) }}">{{ trans['id'] }}</a></td>
+                <td class="col-4">{{ trans['name'] }}</td>
+                <td class="col-2">{{ trans['amount'] }}</td>
+                <td class="col-1">{{ subs[trans['sub_category']] }}</td>
+                <td class="col-1">{{ trans['mon']|string +'/'+ trans['daynum']|string +'/'+ trans['yr']|string }}</td>
+                <td class="col-1">{{ cards[trans['card']] }}</td>
+                <td class="col-1">{{ degrees[trans['degree']] }}</td>
+                <td class="col-1">{{ trans['comments'] }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
 
 {% endblock %}

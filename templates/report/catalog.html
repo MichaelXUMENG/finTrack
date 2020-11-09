@@ -13,7 +13,7 @@
             <div class="item itemcard">
                 <h4>{{ card['name'] }}</h4>
                 <a href="{{ url_for('report.view_all_spending_card', card=card['id']) }}">
-                    <img src="{{ url_for('static', filename='images/report/'+card['name']+'.jpeg') }}" alt="" />
+                    <img src="{{ url_for('static', filename='images/report/'+card['name']+'.jpeg') }}" alt="no-image" />
                 </a>
             </div>
             {% endfor %}
