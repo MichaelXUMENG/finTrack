@@ -40,21 +40,26 @@ def annualReport(year):
     return Response(output.getvalue(), mimetype='image/png')
 
 
-@bp.route('/<int:month>/monthReport.png')
-def monthReport(month):
+@bp.route('/<int:year>/<int:month>/monthReport.png')
+def monthReport(year, month):
+    month_translate ={
+        1: 'January', 2: 'February', 3: 'March', 4: 'April',
+        5: 'May', 6: 'June', 7: 'July', 8: 'August',
+        9: 'September', 10: 'October', 11: 'November', 12: 'December',
+    }
     engine = create_engine("sqlite:///instance/finTrack.sqlite")
     con = engine.connect()
     summary = con.execute('SELECT SUM(amount) as summary, c.name' +
                           ' FROM spending LEFT JOIN categories AS c on category = c.id' +
-                          ' WHERE mon=? and category!=?' +
+                          ' WHERE yr=? and mon=? and category!=?' +
                           ' GROUP BY category ORDER BY SUM(amount) DESC',
-                          (month, 16,)
+                          (year, month, 16,)
                           )
     df_summary = pd.DataFrame(summary.fetchall())
     df_summary.columns = summary.keys()
     con.close()
 
-    title = str(month)+" Monthly Summary"
+    title = f'{year} {month_translate[month]} Monthly Summary'
     colors = ['#ff9999', '#66b3ff', '#99ff99', '#ffcc99', '#ffc4d8', '#9bf6ff', '#ffe39e', '#ffd3b8', '#e9fba6',
               '#adebad', '#99ffeb']
     fig = Figure()

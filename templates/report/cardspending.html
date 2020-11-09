@@ -1,4 +1,5 @@
 {% extends 'report/allspending.html' %}
 {% block nav%}
+<br>
 <a href="{{ url_for('spending.spending_add_from_card', card=card_id ) }}">Add a spending of {{ cards[card_id] }}</a>
 {% endblock %}
