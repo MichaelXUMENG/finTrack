@@ -199,7 +199,7 @@ def read_pdf_statement_chase_credit(pdf_path: str) -> list:
                 elif amount_pattern.fullmatch(item) is not None:
                     spending['amount'] = float(item.replace(',', ''))
                 else:
-                    spending['name'] = item
+                    spending['name'] = item.replace(',', '')
             final_list.append(spending)
 
     # return sorted(final_list, key=lambda i: i['date'], reverse=True)

@@ -18,6 +18,7 @@
             <form action="{{ url_for('spending.save_statement_data') }}" method="post" class="form-group" >
                 <input type="hidden" name="count" value="{{ inputs|length }}">
                 <input type="hidden" name="card" value="{{ card }}">
+                <input type="hidden" name="preset" value="{{ preset }}">
                 <table class="table table-hover">
                     <thead>
                         <tr class="form-group row">
@@ -32,6 +33,7 @@
                     </thead>
                     <tbody>
                         {% for input in inputs %}
+                        {% set exist_entry = preset.get(input['name'], None) %}
                         <tr class="form-group row">
                             <td scope="row">{{ loop.index }}</td>
                             <td style="text-align: right">
@@ -49,7 +51,11 @@
                                     <optgroup label="{{ cat['name'] }}">
                                         {% for sub in settings['subCats'] %}
                                         {% if sub['c_id']==cat['id'] %}
-                                        <option value="{{ sub['id'] }}">{{ sub['name'] }}</option>
+                                            {% if exist_entry and sub['id'] == exist_entry['category']|int %}
+                                            <option value="{{ sub['id'] }}" selected>{{ sub['name'] }}</option>
+                                            {% else %}
+                                            <option value="{{ sub['id'] }}">{{ sub['name'] }}</option>
+                                            {% endif %}
                                         {% endif %}
                                         {% endfor %}
                                     </optgroup>
@@ -69,7 +75,11 @@
                                 <select class="js-select2 form-control" id="degree{{ loop.index }}" name="degree{{ loop.index }}" required>
                                     <option value="">Please Choose a Degree</option>
                                     {% for degree in settings['degrees'] %}
-                                    <option value="{{ degree['id'] }}">{{ degree['name'] }}</option>
+                                        {% if exist_entry and degree['id'] == exist_entry['degree']|int %}
+                                        <option value="{{ degree['id'] }}" selected>{{ degree['name'] }}</option>
+                                        {% else %}
+                                        <option value="{{ degree['id'] }}">{{ degree['name'] }}</option>
+                                        {% endif %}
                                     {% endfor %}
                                 </select>
                                 <div class="dropDownSelect2"></div>

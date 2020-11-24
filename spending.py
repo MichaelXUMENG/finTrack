@@ -1,4 +1,5 @@
 import functools
+import ast
 import os
 import re
 import csv
@@ -153,7 +154,7 @@ def spending_add_from_statement():
     path_to_statement = os.path.join(current_app.config['UPLOAD_STATEMENT_FOLDER'], filename)
     file.save(path_to_statement)
 
-    transaction_preset = os.path.join(current_app.config['UPLOAD_STATEMENT_FOLDER'],
+    transaction_preset = os.path.join(current_app.config['PRELOAD_FOLDER'],
                                       current_app.config['PRESET_FILE_NAME'])
 
     with open(transaction_preset, 'r') as csv_file:
@@ -187,7 +188,7 @@ def save_statement_data():
     transaction_counts, valid_transactions = int(request.form.get('count', 0)), 0
     card_name = request.form.get('card', '')
     card = get_card_by_name(card_name)
-    preset = request.form.get('card', '')
+    preset = ast.literal_eval(request.form.get('preset', ''))
 
     db = get_db()
     try:
@@ -221,7 +222,7 @@ def save_statement_data():
 
         # save the preset back to the preset file.
         if preset:
-            transaction_preset = os.path.join(current_app.config['UPLOAD_STATEMENT_FOLDER'],
+            transaction_preset = os.path.join(current_app.config['PRELOAD_FOLDER'],
                                               current_app.config['PRESET_FILE_NAME'])
             sample_entrys = list(preset.keys())
             dict_list = []
