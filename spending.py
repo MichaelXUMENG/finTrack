@@ -1,6 +1,7 @@
 import functools
 import os
 import re
+import csv
 from flask import(
     Blueprint, flash, g, redirect, render_template, request, session, url_for, current_app, after_this_request
 )
@@ -149,8 +150,15 @@ def spending_add_from_statement():
         return redirect(url_for('index.index'))
 
     filename = secure_filename(file.filename)
-    path_to_statement = os.path.join(current_app.config['UPLOAD_FOLDER'], filename)
+    path_to_statement = os.path.join(current_app.config['UPLOAD_STATEMENT_FOLDER'], filename)
     file.save(path_to_statement)
+
+    transaction_preset = os.path.join(current_app.config['UPLOAD_STATEMENT_FOLDER'],
+                                      current_app.config['PRESET_FILE_NAME'])
+
+    with open(transaction_preset, 'r') as csv_file:
+        preset = {row['name']: {k: v for k, v in row.items()}
+                  for row in csv.DictReader(csv_file, skipinitialspace=True)}
 
     inputs = []
     if card in ('Freedom - Chase', 'Unlimited - Chase', 'Sapphire - Chase'):
@@ -170,14 +178,16 @@ def spending_add_from_statement():
     degrees = get_all_degrees()
     settings = {'cats': cats, 'subCats': subCats, 'degrees': degrees}
 
-    return render_template('spending/add_spending_from_statement.html', card=card, inputs=inputs, settings=settings)
+    return render_template('spending/add_spending_from_statement.html',
+                           card=card, inputs=inputs, settings=settings, preset=preset)
 
 
 @bp.route('/save_statement', methods=['POST'])
 def save_statement_data():
-    transaction_counts = int(request.form.get('count', 0))
+    transaction_counts, valid_transactions = int(request.form.get('count', 0)), 0
     card_name = request.form.get('card', '')
     card = get_card_by_name(card_name)
+    preset = request.form.get('card', '')
 
     db = get_db()
     try:
@@ -202,8 +212,29 @@ def save_statement_data():
                      date_match.group(3), date_match.group(1), date_match.group(2), card['id'], single_trans['degree'],
                      single_trans['note'])
                 )
+                valid_transactions += 1
+                if single_trans['name'] not in preset:
+                    preset[single_trans['name']] = {'name': single_trans['name'],
+                                                    'category': single_trans['category'],
+                                                    'degree': single_trans['degree']}
         db.commit()
-        flash(f'{transaction_counts} spendings are added!', 'success')
+
+        # save the preset back to the preset file.
+        if preset:
+            transaction_preset = os.path.join(current_app.config['UPLOAD_STATEMENT_FOLDER'],
+                                              current_app.config['PRESET_FILE_NAME'])
+            sample_entrys = list(preset.keys())
+            dict_list = []
+            for entry in sample_entrys:
+                dict_list.append(preset[entry])
+            keys = preset[sample_entrys[0]].keys()
+
+            with open(transaction_preset, 'w', newline='') as output_file:
+                dict_writer = csv.DictWriter(output_file, keys)
+                dict_writer.writeheader()
+                dict_writer.writerows(dict_list)
+
+        flash(f'{valid_transactions} spendings are added!', 'success')
         return redirect(url_for('report.add_spending_card', card=card['id']))
     except TypeError as e:
         flash(e, 'error')
