@@ -199,7 +199,7 @@ def read_pdf_statement_chase_credit(pdf_path: str) -> list:
                 elif amount_pattern.fullmatch(item) is not None:
                     spending['amount'] = float(item.replace(',', ''))
                 else:
-                    spending['name'] = item
+                    spending['name'] = item.replace(',', '')
             final_list.append(spending)
 
     # return sorted(final_list, key=lambda i: i['date'], reverse=True)
@@ -284,9 +284,22 @@ def read_pdf_statement_chase_checking(pdf_path: str) -> list:
 
     # after getting all the transaction information, we then need to clean up the result
     # and save the results into the list
+    date_pattern = re.compile("[0-9]{2}/[0-9]{2}")
+    amount_pattern = re.compile("-?[0-9,]*\.[0-9]{2}")
     for value in result.values():
         # only save the list with 3 elements: [date, name, amount]
         if len(value) == 4:
-            final_list.append(value)
+            spending = {}
+            for item in value:
+                if date_pattern.fullmatch(item) is not None:
+                    spending['date'] = item + f'/{datetime.today().year}'
+                elif amount_pattern.fullmatch(item) is not None:
+                    if 'amount' not in spending or spending['amount'] > float(item.replace(',', '')):
+                        spending['amount'] = float(item.replace(',', ''))
+                else:
+                    spending['name'] = re.sub(' +', ' ', item)
 
+            final_list.append(spending)
+
+    # return sorted(final_list, key=lambda i: i['date'], reverse=True)
     return final_list

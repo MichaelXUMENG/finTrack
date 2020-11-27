@@ -5,7 +5,9 @@ from flask import Flask
 from . import db
 from . import index, setting, spending, report, backup_data, graphReport
 
-UPLOAD_FOLDER = 'temp/uploads/statement'
+UPLOAD_STATEMENT_FOLDER = 'temp/uploads/statement'
+PRELOAD_FOLDER = 'temp/preload'
+PRESET_FILE_NAME = 'transaction_preset.csv'
 ALLOWED_EXTENSIONS = {'pdf'}
 
 
@@ -15,7 +17,9 @@ def create_app(test_config=None):
     app.config.from_mapping(
         SECRET_KEY='dev',
         DATABASE=os.path.join(app.instance_path, 'finTrack.sqlite'),
-        UPLOAD_FOLDER=UPLOAD_FOLDER,
+        UPLOAD_STATEMENT_FOLDER=UPLOAD_STATEMENT_FOLDER,
+        PRELOAD_FOLDER=PRELOAD_FOLDER,
+        PRESET_FILE_NAME=PRESET_FILE_NAME,
     )
     # print(os.environ.get("SECRET_EMAILP"))
     if test_config is None:

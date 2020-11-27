@@ -1,6 +1,9 @@
 import functools
+import ast
+import json
 import os
 import re
+import csv
 from flask import(
     Blueprint, flash, g, redirect, render_template, request, session, url_for, current_app, after_this_request
 )
@@ -139,20 +142,41 @@ def spending_add_from_card(card):
 
 @bp.route('/add/statement', methods=['POST'])
 def spending_add_from_statement():
+    # Check if there is file received from the form
+    # If there is not, then return to the index page; otherwise, continue
     if 'statement_pdf' not in request.files:
         flash('No file part')
         return redirect(url_for('index.index'))
+    # Get the card information from the form
     card = request.form['card']
+    # get the actual file object from the form
     file = request.files['statement_pdf']
+    # If there is no filename, then return to the index page
     if file.filename == '':
         flash('No selected file')
         return redirect(url_for('index.index'))
 
+    # get the filename from the file object
     filename = secure_filename(file.filename)
-    path_to_statement = os.path.join(current_app.config['UPLOAD_FOLDER'], filename)
+    # compose the /path_to_statement/filename by adding the CONSTANTS from the application
+    path_to_statement = os.path.join(current_app.config['UPLOAD_STATEMENT_FOLDER'], filename)
+    # save the file to the temporary directory, which will be deleted later
     file.save(path_to_statement)
 
+    # also get the /path_to_file/filename of the preset configuration file, which is in csv format
+    transaction_preset = os.path.join(current_app.config['PRELOAD_FOLDER'],
+                                      current_app.config['PRESET_FILE_NAME'])
+
+    # open the 'preset' csv file, and read the contents into a dictionary,
+    # whose key is name of each transaction, and value would be another dictionary,
+    # whose keys are name, category and degree, whose value are the value from each transaction
+    with open(transaction_preset, 'r') as csv_file:
+        preset = {row['name']: {k: v for k, v in row.items()}
+                  for row in csv.DictReader(csv_file, skipinitialspace=True)}
+
+    # create an empty list for the content of pdf files
     inputs = []
+    # extract information from the statements of different cards
     if card in ('Freedom - Chase', 'Unlimited - Chase', 'Sapphire - Chase'):
         inputs = read_pdf_statement_chase_credit(path_to_statement)
     elif card == 'Checking - Chase':
@@ -163,25 +187,40 @@ def spending_add_from_statement():
     #
     #     os.remove(path)
 
+    # After reading and extracting the context from the pdf statements,
+    # delete the pdf files saved in the temporary directory
     os.remove(path_to_statement)
 
+    # getting those basic information from the database
     cats = get_all_category()
     subCats = get_all_subCategory()
     degrees = get_all_degrees()
     settings = {'cats': cats, 'subCats': subCats, 'degrees': degrees}
+    subcat_degree_map = {sub_category['id'] : sub_category['default_degree'] for sub_category in subCats}
 
-    return render_template('spending/add_spending_from_statement.html', card=card, inputs=inputs, settings=settings)
+    # Then pass the pdf contents, preset configuration and basic information into the template
+    return render_template('spending/add_spending_from_statement.html',
+                           card=card, inputs=inputs, settings=settings, preset=preset,
+                           subcat_degree_map=json.dumps(subcat_degree_map))
 
 
 @bp.route('/save_statement', methods=['POST'])
 def save_statement_data():
-    transaction_counts = int(request.form.get('count', 0))
+    # initiate the transaction counts and valid transactions with the count of transactions and 0
+    transaction_counts, valid_transactions = int(request.form.get('count', 0)), 0
+    # get the card name from the form
     card_name = request.form.get('card', '')
+    # then get the card database entry by the card name
     card = get_card_by_name(card_name)
+    # get the preset from form, which is in json format, and converted into dictionary using ast.literal_eval()
+    preset = ast.literal_eval(request.form.get('preset', ''))
 
+    # Get a hold of a database entry
     db = get_db()
     try:
+        # loop through all the transactions
         for index in range(transaction_counts):
+            # Compose each single transaction's detail by getting those information by the index
             single_trans = {
                 'exclude': request.form.get(f'exclude{index+1}', 'False'),
                 'name': request.form.get(f'name{index+1}', 'N/A'),
@@ -191,10 +230,15 @@ def save_statement_data():
                 'degree': request.form.get(f'degree{index+1}', -1),
                 'note': request.form.get(f'note{index+1}', ''),
             }
+            # if this transaction is not excluded, then save the transaction into database
             if single_trans['exclude'] == 'False':
+                # get the sub_category object from database using the sub_category_id
                 sub_category = get_one_subCategory(single_trans['category'])
+                # match the date information from transaction using regular expression
+                # by doing so, I can get the year, month and day using the position of the date_match
                 date_match = re.fullmatch(r"([0-9]{2})/([0-9]{2})/([0-9]{4})", single_trans['date'])
 
+                # insert the single transaction into the database
                 db.execute(
                     'INSERT INTO spending (name, amount, category, sub_category, yr, mon, daynum, card, degree, comments)'
                     ' VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
@@ -202,9 +246,44 @@ def save_statement_data():
                      date_match.group(3), date_match.group(1), date_match.group(2), card['id'], single_trans['degree'],
                      single_trans['note'])
                 )
+                # increase the valid transaction number
+                valid_transactions += 1
+                # if the transaction is not already in the preset,
+                # then save the transaction into the preset dictionary.
+                if single_trans['name'] not in preset:
+                    preset[single_trans['name']] = {'name': single_trans['name'],
+                                                    'category': single_trans['category'],
+                                                    'degree': single_trans['degree']}
+        # Then commit the database after all transactions are saved
         db.commit()
-        flash(f'{transaction_counts} spendings are added!', 'success')
+
+        # save the preset back to the preset file, if the preset is not empty
+        if preset:
+            # get the /path_to_file/filename of the preset configuration file, which is in csv format
+            transaction_preset = os.path.join(current_app.config['PRELOAD_FOLDER'],
+                                              current_app.config['PRESET_FILE_NAME'])
+            # get a list of the keys of preset dictionary, which are the saved transaction name
+            sample_entrys = list(preset.keys())
+            # create an empty list to hold all the transactions in dictionary format
+            # and save each transaction into the list
+            dict_list = []
+            for entry in sample_entrys:
+                dict_list.append(preset[entry])
+            # Then get the keys from a single transaction, which will be the header of the preset csv file
+            keys = preset[sample_entrys[0]].keys()
+
+            # Open the preset csv files in the writing mode, and save the list of dictionary into the csv,
+            # with the keys as header
+            with open(transaction_preset, 'w', newline='') as output_file:
+                dict_writer = csv.DictWriter(output_file, keys)
+                dict_writer.writeheader()
+                dict_writer.writerows(dict_list)
+
+        # Flash the successful message to the screen
+        flash(f'{valid_transactions} spendings are added!', 'success')
+        # and return to the report page of that card
         return redirect(url_for('report.add_spending_card', card=card['id']))
+    # If any exception raised, flash the error message and rollback the database and return to the index page.
     except TypeError as e:
         flash(e, 'error')
         db.rollback()

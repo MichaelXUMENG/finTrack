@@ -18,6 +18,7 @@
             <form action="{{ url_for('spending.save_statement_data') }}" method="post" class="form-group" >
                 <input type="hidden" name="count" value="{{ inputs|length }}">
                 <input type="hidden" name="card" value="{{ card }}">
+                <input type="hidden" name="preset" value="{{ preset }}">
                 <table class="table table-hover">
                     <thead>
                         <tr class="form-group row">
@@ -32,24 +33,32 @@
                     </thead>
                     <tbody>
                         {% for input in inputs %}
+                        {% set exist_entry = preset.get(input['name'], None) %}
                         <tr class="form-group row">
                             <td scope="row">{{ loop.index }}</td>
                             <td style="text-align: right">
                                 <input class="form-check-input" type="checkbox" id="exclude{{ loop.index }}"
-                                       name="exclude{{ loop.index }}" value="True">
+                                       name="exclude{{ loop.index }}" value="True"
+                                       onchange="attribute_switch({{ loop.index }})">
                             </td>
                             <td class="col-4">
                                 <input type="text" class="form-control" id="name{{ loop.index }}" name="name{{ loop.index }}"
                                        value="{{ input['name'] }}">
                             </td>
                             <td class="col-2">
-                                <select class="js-select2 form-control" id="category{{ loop.index }}" name="category{{ loop.index }}" required>
+                                <select class="js-select2 form-control" id="category{{ loop.index }}"
+                                        name="category{{ loop.index }}" required
+                                        onchange="sync_degree_dropdown(category{{ loop.index }}, degree{{ loop.index }}, {{ subcat_degree_map }})">
                                     <option value="">Choose a Category</option>
                                     {% for cat in settings['cats'] %}
                                     <optgroup label="{{ cat['name'] }}">
                                         {% for sub in settings['subCats'] %}
                                         {% if sub['c_id']==cat['id'] %}
-                                        <option value="{{ sub['id'] }}">{{ sub['name'] }}</option>
+                                            {% if exist_entry and sub['id'] == exist_entry['category']|int %}
+                                            <option value="{{ sub['id'] }}" selected>{{ sub['name'] }}</option>
+                                            {% else %}
+                                            <option value="{{ sub['id'] }}">{{ sub['name'] }}</option>
+                                            {% endif %}
                                         {% endif %}
                                         {% endfor %}
                                     </optgroup>
@@ -69,7 +78,11 @@
                                 <select class="js-select2 form-control" id="degree{{ loop.index }}" name="degree{{ loop.index }}" required>
                                     <option value="">Please Choose a Degree</option>
                                     {% for degree in settings['degrees'] %}
-                                    <option value="{{ degree['id'] }}">{{ degree['name'] }}</option>
+                                        {% if exist_entry and degree['id'] == exist_entry['degree']|int %}
+                                        <option value="{{ degree['id'] }}" selected>{{ degree['name'] }}</option>
+                                        {% else %}
+                                        <option value="{{ degree['id'] }}">{{ degree['name'] }}</option>
+                                        {% endif %}
                                     {% endfor %}
                                 </select>
                                 <div class="dropDownSelect2"></div>
@@ -93,5 +106,52 @@
         <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.5.3/dist/js/bootstrap.bundle.min.js"
                 integrity="sha384-ho+j7jyWK8fNQe+A12Hb8AhRq26LrZ/JpcUGGOn+Y7RsweNrtN/tE3MoK7ZeZDyx"
                 crossorigin="anonymous"></script>
+        <script>
+            function attribute_switch(row_index){
+                // Get the elements of a single transaction
+                exclude_checkbox = document.getElementById("exclude" + row_index);
+                name_field = document.getElementById("name" + row_index);
+                category_dropdown = document.getElementById("category" + row_index);
+                amount_field = document.getElementById("amount" + row_index);
+                date_field = document.getElementById("date" + row_index);
+                degree_dropdown = document.getElementById("degree" + row_index);
+                note_area = document.getElementById("note" + row_index);
+
+                if (exclude_checkbox.checked) {
+                    // Remove the requirement from category and degree dropdown fields
+                    // if the exclude checkbox is checked
+                    category_dropdown.required = false;
+                    degree_dropdown.required = false;
+
+                    // Then make each field of this transaction readonly.
+                    name_field.readOnly = true;
+                    // There is no readOnly attribute in <select> tab, use disable instead. The same as degree_dropdown
+                    category_dropdown.disabled = true;
+                    amount_field.readOnly = true;
+                    date_field.readOnly = true;
+                    degree_dropdown.disabled = true;
+                    note_area.readOnly = true;
+                }
+                else {
+                    // Add the requirement back to category and degree dropdown fields
+                    // if the exclude checkbox is un-checked
+                    category_dropdown.required = true;
+                    degree_dropdown.required = true;
+
+                    // Then unlock each field of this transaction.
+                    name_field.readOnly = false;
+                    category_dropdown.disabled = false;
+                    amount_field.readOnly = false;
+                    date_field.readOnly = false;
+                    degree_dropdown.disabled = false;
+                    note_area.readOnly = false;
+                }
+            }
+
+            function sync_degree_dropdown(category_dropdown, degree_dropdown, map){
+                let cat_id = category_dropdown.value;
+                degree_dropdown.selectedIndex = map[cat_id];
+            }
+        </script>
     </body>
 </html>
