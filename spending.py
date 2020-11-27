@@ -1,5 +1,6 @@
 import functools
 import ast
+import json
 import os
 import re
 import csv
@@ -195,10 +196,12 @@ def spending_add_from_statement():
     subCats = get_all_subCategory()
     degrees = get_all_degrees()
     settings = {'cats': cats, 'subCats': subCats, 'degrees': degrees}
+    subcat_degree_map = {sub_category['id'] : sub_category['default_degree'] for sub_category in subCats}
 
     # Then pass the pdf contents, preset configuration and basic information into the template
     return render_template('spending/add_spending_from_statement.html',
-                           card=card, inputs=inputs, settings=settings, preset=preset)
+                           card=card, inputs=inputs, settings=settings, preset=preset,
+                           subcat_degree_map=json.dumps(subcat_degree_map))
 
 
 @bp.route('/save_statement', methods=['POST'])
