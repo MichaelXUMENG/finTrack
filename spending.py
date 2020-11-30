@@ -12,7 +12,7 @@ from .db_utils import (
     get_all_degrees, get_one_spending, get_card_by_name
 )
 from finTrack.db import get_db
-from .read_in_pdf_statement import read_pdf_statement_chase_credit, read_pdf_statement_chase_checking
+from .read_in_pdf_statement import read_pdf_statement_chase, read_apple_csv_transactions
 from werkzeug.utils import secure_filename
 bp = Blueprint('spending', __name__, url_prefix='/spending')
 
@@ -178,9 +178,11 @@ def spending_add_from_statement():
     inputs = []
     # extract information from the statements of different cards
     if card in ('Freedom - Chase', 'Unlimited - Chase', 'Sapphire - Chase'):
-        inputs = read_pdf_statement_chase_credit(path_to_statement)
+        inputs = read_pdf_statement_chase(path_to_statement, 'chase_credit')
     elif card == 'Checking - Chase':
-        inputs = read_pdf_statement_chase_checking(path_to_statement)
+        inputs = read_pdf_statement_chase(path_to_statement, 'chase_checking')
+    elif card == 'Apple - Goldman Sachs':
+        inputs = read_apple_csv_transactions(path_to_statement)
     # def generate():
     #     with open(path) as f:
     #         yield from f
@@ -196,7 +198,7 @@ def spending_add_from_statement():
     subCats = get_all_subCategory()
     degrees = get_all_degrees()
     settings = {'cats': cats, 'subCats': subCats, 'degrees': degrees}
-    subcat_degree_map = {sub_category['id'] : sub_category['default_degree'] for sub_category in subCats}
+    subcat_degree_map = {sub_category['id']: sub_category['default_degree'] for sub_category in subCats}
 
     # Then pass the pdf contents, preset configuration and basic information into the template
     return render_template('spending/add_spending_from_statement.html',
