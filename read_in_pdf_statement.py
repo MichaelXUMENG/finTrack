@@ -204,10 +204,14 @@ def read_pdf_statement_chase(pdf_path: str, card_type) -> list:
     # and save the results into the list
     date_pattern = re.compile("[0-9]{2}/[0-9]{2}")
     amount_pattern = re.compile("-?[0-9,]*\.[0-9]{2}")
+    # loop through all the items in the result list
     for value in result.values():
-        # only save the list with 3 elements: [date, name, amount]
+        # only save the list with 3 or 4 elements: [date, name, amount] depending on the card type
         if len(value) == card_key_points[card_type]['contained_elements']:
+            # create an empty dictionary to host each transaction
             spending = {}
+            # check each item in the value list, match the pattern with either date or amount, and save the item into
+            # the matched key
             for item in value:
                 if date_pattern.fullmatch(item) is not None:
                     spending['date'] = item + f'/{datetime.today().year}'
@@ -217,6 +221,9 @@ def read_pdf_statement_chase(pdf_path: str, card_type) -> list:
                 else:
                     item = re.sub(' +', ' ', item)
                     spending['name'] = item.replace(',', '')
+            # if the card type is checking, then alter the amount of transaction by adding the '-' of the amount
+            if card_type == 'chase_checking':
+                spending['amount'] = -spending.get('amount', 0)
             final_list.append(spending)
 
     # return sorted(final_list, key=lambda i: i['date'], reverse=True)
