@@ -25,7 +25,8 @@ CREATE TABLE cards (
     bank TEXT NOT NULL,
     name TEXT UNIQUE NOT NULL,
     cur_balance REAL,
-    pay_date INTEGER
+    pay_date INTEGER,
+    last_statement TEXT
 );
 
 CREATE TABLE degrees (
