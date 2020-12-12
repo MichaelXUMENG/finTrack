@@ -63,7 +63,7 @@ def get_one_subCategory(sub_id):
 
 def get_all_cards(order='bank, name'):
     card = get_db().execute(
-        'SELECT id, name, bank, cur_balance, pay_date'
+        'SELECT id, name, bank, cur_balance, pay_date, last_statement'
         ' FROM cards'
         ' ORDER BY ?',
         (order,)
@@ -73,7 +73,7 @@ def get_all_cards(order='bank, name'):
 
 def get_one_card(card_id=0):
     card = get_db().execute(
-        'SELECT id, name, bank, cur_balance, pay_date'
+        'SELECT id, name, bank, cur_balance, pay_date, last_statement'
         ' FROM cards'
         ' WHERE id = ?',
         (card_id,)
@@ -88,7 +88,7 @@ def get_one_card(card_id=0):
 def get_card_by_name(card_name):
     card_info = card_name.split(' - ')
     card = get_db().execute(
-        'SELECT id, name, bank, cur_balance, pay_date'
+        'SELECT id, name, bank, cur_balance, pay_date, last_statement'
         ' FROM cards'
         ' WHERE name = ? and bank = ?',
         (card_info[0], card_info[1])

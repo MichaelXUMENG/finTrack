@@ -8,7 +8,7 @@ bp = Blueprint('index', __name__)
 
 def get_card():
     card = get_db().execute(
-        'SELECT id, name, bank, cur_balance, pay_date'
+        'SELECT id, name, bank, cur_balance, pay_date, last_statement'
         ' FROM cards'
         ' ORDER BY bank, name'
     ).fetchall()
