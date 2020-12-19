@@ -12,7 +12,7 @@ from .db_utils import (
     get_all_degrees, get_one_spending, get_card_by_name
 )
 from finTrack.db import get_db
-from .read_in_pdf_statement import read_pdf_statement_chase, read_apple_csv_transactions
+from .read_in_pdf_statement import read_pdf_statement_chase, read_apple_csv_transactions, read_pdf_statement_citi
 from werkzeug.utils import secure_filename
 bp = Blueprint('spending', __name__, url_prefix='/spending')
 
@@ -163,26 +163,46 @@ def spending_add_from_statement():
     # save the file to the temporary directory, which will be deleted later
     file.save(path_to_statement)
 
-    # also get the /path_to_file/filename of the preset configuration file, which is in csv format
-    transaction_preset = os.path.join(current_app.config['PRELOAD_FOLDER'],
-                                      current_app.config['PRESET_FILE_NAME'])
+    # create an empty list for the content of pdf files
+    inputs = []
+    # extract information from the statements of different cards,
+    # and generate the path to the preset according to differnet card
+    if card in ('Freedom - Chase', 'Unlimited - Chase', 'Sapphire - Chase'):
+        inputs = read_pdf_statement_chase(path_to_statement, 'chase_credit')
+
+        transaction_preset = os.path.join(current_app.config['PRELOAD_FOLDER'],
+                                          'chase_credit_' + current_app.config['PRESET_FILE_NAME'])
+    elif card == 'Checking - Chase':
+        inputs = read_pdf_statement_chase(path_to_statement, 'chase_checking')
+
+        transaction_preset = os.path.join(current_app.config['PRELOAD_FOLDER'],
+                                          'chase_checking_' + current_app.config['PRESET_FILE_NAME'])
+    elif card == 'Apple - Goldman Sachs':
+        inputs = read_apple_csv_transactions(path_to_statement)
+
+        transaction_preset = os.path.join(current_app.config['PRELOAD_FOLDER'],
+                                          'apple_' + current_app.config['PRESET_FILE_NAME'])
+    elif card in ('AA - Citi', 'Costco - Citi', 'Double Cash Back - Citi'):
+        inputs = read_pdf_statement_citi(path_to_statement, 'citi')
+
+        transaction_preset = os.path.join(current_app.config['PRELOAD_FOLDER'],
+                                          'citi_' + current_app.config['PRESET_FILE_NAME'])
+    else:
+        transaction_preset = os.path.join(current_app.config['PRELOAD_FOLDER'],
+                                          current_app.config['PRESET_FILE_NAME'])
 
     # open the 'preset' csv file, and read the contents into a dictionary,
     # whose key is name of each transaction, and value would be another dictionary,
     # whose keys are name, category and degree, whose value are the value from each transaction
-    with open(transaction_preset, 'r') as csv_file:
-        preset = {row['name']: {k: v for k, v in row.items()}
-                  for row in csv.DictReader(csv_file, skipinitialspace=True)}
+    try:
+        with open(transaction_preset, 'r') as csv_file:
+            preset = {row['name']: {k: v for k, v in row.items()}
+                      for row in csv.DictReader(csv_file, skipinitialspace=True)}
+    except FileNotFoundError:
+        with open('temp/preload/transaction_preset.csv', 'r') as csv_file:
+            preset = {row['name']: {k: v for k, v in row.items()}
+                      for row in csv.DictReader(csv_file, skipinitialspace=True)}
 
-    # create an empty list for the content of pdf files
-    inputs = []
-    # extract information from the statements of different cards
-    if card in ('Freedom - Chase', 'Unlimited - Chase', 'Sapphire - Chase'):
-        inputs = read_pdf_statement_chase(path_to_statement, 'chase_credit')
-    elif card == 'Checking - Chase':
-        inputs = read_pdf_statement_chase(path_to_statement, 'chase_checking')
-    elif card == 'Apple - Goldman Sachs':
-        inputs = read_apple_csv_transactions(path_to_statement)
     # def generate():
     #     with open(path) as f:
     #         yield from f
@@ -261,9 +281,22 @@ def save_statement_data():
 
         # save the preset back to the preset file, if the preset is not empty
         if preset:
-            # get the /path_to_file/filename of the preset configuration file, which is in csv format
-            transaction_preset = os.path.join(current_app.config['PRELOAD_FOLDER'],
-                                              current_app.config['PRESET_FILE_NAME'])
+            if card_name in ('Freedom - Chase', 'Unlimited - Chase', 'Sapphire - Chase'):
+                transaction_preset = os.path.join(current_app.config['PRELOAD_FOLDER'],
+                                                  'chase_credit_' + current_app.config['PRESET_FILE_NAME'])
+            elif card == 'Checking - Chase':
+                transaction_preset = os.path.join(current_app.config['PRELOAD_FOLDER'],
+                                                  'chase_checking_' + current_app.config['PRESET_FILE_NAME'])
+            elif card == 'Apple - Goldman Sachs':
+                transaction_preset = os.path.join(current_app.config['PRELOAD_FOLDER'],
+                                                  'apple_' + current_app.config['PRESET_FILE_NAME'])
+            elif card in ('AA - Citi', 'Costco - Citi', 'Double Cash Back - Citi'):
+                transaction_preset = os.path.join(current_app.config['PRELOAD_FOLDER'],
+                                                  'citi_' + current_app.config['PRESET_FILE_NAME'])
+            else:
+                transaction_preset = os.path.join(current_app.config['PRELOAD_FOLDER'],
+                                                  current_app.config['PRESET_FILE_NAME'])
+
             # get a list of the keys of preset dictionary, which are the saved transaction name
             sample_entrys = list(preset.keys())
             # create an empty list to hold all the transactions in dictionary format
@@ -276,7 +309,7 @@ def save_statement_data():
 
             # Open the preset csv files in the writing mode, and save the list of dictionary into the csv,
             # with the keys as header
-            with open(transaction_preset, 'w', newline='') as output_file:
+            with open(transaction_preset, 'w+', newline='') as output_file:
                 dict_writer = csv.DictWriter(output_file, keys)
                 dict_writer.writeheader()
                 dict_writer.writerows(dict_list)
