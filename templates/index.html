@@ -161,7 +161,7 @@
 							<datalist id="cards" class="dropdown-content">
 								{% for card in cards %}
 								<option value="{{ card['name'] + ' - ' + card['bank'] }}">
-									statement: {{ card['last_statement'] }}
+									{{ card['last_statement'] }}
 								</option>
 								{% endfor %}
 							</datalist>

@@ -222,7 +222,7 @@ def spending_add_from_statement():
 
     # Then pass the pdf contents, preset configuration and basic information into the template
     return render_template('spending/add_spending_from_statement.html',
-                           card=card, inputs=inputs, settings=settings, preset=preset,
+                           card=card, inputs=inputs, settings=settings, preset=preset, filename=filename,
                            subcat_degree_map=json.dumps(subcat_degree_map))
 
 
@@ -232,8 +232,10 @@ def save_statement_data():
     transaction_counts, valid_transactions = int(request.form.get('count', 0)), 0
     # get the card name from the form
     card_name = request.form.get('card', '')
+    statement_name = request.form.get('filename', '')
     # then get the card database entry by the card name
     card = get_card_by_name(card_name)
+    total_amount = card['cur_balance']
     # get the preset from form, which is in json format, and converted into dictionary using ast.literal_eval()
     preset = ast.literal_eval(request.form.get('preset', ''))
 
@@ -242,18 +244,17 @@ def save_statement_data():
     try:
         # loop through all the transactions
         for index in range(transaction_counts):
-            # Compose each single transaction's detail by getting those information by the index
-            single_trans = {
-                'exclude': request.form.get(f'exclude{index+1}', 'False'),
-                'name': request.form.get(f'name{index+1}', 'N/A'),
-                'category': request.form.get(f'category{index+1}', -1),
-                'amount': request.form.get(f'amount{index+1}', 0),
-                'date': request.form.get(f'date{index+1}', '01/01/0101'),
-                'degree': request.form.get(f'degree{index+1}', -1),
-                'note': request.form.get(f'note{index+1}', ''),
-            }
             # if this transaction is not excluded, then save the transaction into database
-            if single_trans['exclude'] == 'False':
+            if request.form.get(f'exclude{index + 1}', 'False') == 'False':
+                # Compose each single transaction's detail by getting those information by the index
+                single_trans = {
+                    'name': request.form.get(f'name{index + 1}', 'N/A'),
+                    'category': request.form.get(f'category{index + 1}', -1),
+                    'amount': request.form.get(f'amount{index + 1}', 0),
+                    'date': request.form.get(f'date{index + 1}', '01/01/0101'),
+                    'degree': request.form.get(f'degree{index + 1}', -1),
+                    'note': request.form.get(f'note{index + 1}', ''),
+                }
                 # get the sub_category object from database using the sub_category_id
                 sub_category = get_one_subCategory(single_trans['category'])
                 # match the date information from transaction using regular expression
@@ -270,12 +271,20 @@ def save_statement_data():
                 )
                 # increase the valid transaction number
                 valid_transactions += 1
+                total_amount += float(single_trans['amount'])
                 # if the transaction is not already in the preset,
                 # then save the transaction into the preset dictionary.
                 if single_trans['name'] not in preset:
                     preset[single_trans['name']] = {'name': single_trans['name'],
                                                     'category': single_trans['category'],
                                                     'degree': single_trans['degree']}
+
+        # Update card information
+        db.execute(
+            'UPDATE cards SET last_statement = ?, cur_balance = ?'
+            ' WHERE id = ?',
+            (statement_name, total_amount, card['id'])
+        )
         # Then commit the database after all transactions are saved
         db.commit()
 
