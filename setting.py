@@ -2,11 +2,8 @@ import functools
 from flask import(
     Blueprint, flash, redirect, render_template, request, url_for
 )
-from .db_utils import (
-    get_all_cards, get_one_card,
-    get_all_degrees, get_one_degree
-)
-from .db_utils import Category, SubCategory
+
+from .db_utils import Category, SubCategory, Card, Degree
 from finTrack.db import get_db
 
 bp = Blueprint('setting', __name__, url_prefix='/setting')
@@ -17,11 +14,14 @@ def catalog():
     settings = {}
     category = Category()
     sub_category = SubCategory()
+    card_object = Card()
+    degree_object = Degree()
+
     try:
         categories = category.get_all_in_order()
         sub_categories = sub_category.get_all_in_order()
-        cards = get_all_cards()
-        degrees = get_all_degrees()
+        cards = card_object.get_all_in_order(order='bank, name')
+        degrees = degree_object.get_all_in_order()
 
         settings = {'cat': categories, 'sub': sub_categories, 'card': cards, 'degree': degrees}
     except Exception as e:
@@ -92,6 +92,10 @@ def category_edit(cid):
 
 @bp.route('/<int:cid>/sub-category/add', methods=('GET', 'POST'))
 def sub_category_add(cid):
+    card_object = Card()
+    category = Category()
+    degree_object = Degree()
+
     if request.method == 'POST':
         sub_name = request.form['name']
         cat_id = request.form['c_id']
@@ -112,11 +116,10 @@ def sub_category_add(cid):
         finally:
             return redirect(url_for('setting.catalog'))
     else:
-        category = Category()
         try:
             cat = category.get_one_by_id(cid)
-            cards = get_all_cards()
-            degrees = get_all_degrees()
+            cards = card_object.get_all_in_order(order='bank, name')
+            degrees = degree_object.get_all_in_order()
             return render_template('setting/add_subcategory.html', category=cat, cards=cards, degrees=degrees)
         except Exception as e:
             flash(e, 'error')
@@ -125,6 +128,9 @@ def sub_category_add(cid):
 
 @bp.route('/sub-category/<int:sid>/view')
 def sub_category_view(sid):
+    card_object = Card()
+    degree_object = Degree()
+
     try:
         db = get_db()
         sub = db.execute(
@@ -135,10 +141,10 @@ def sub_category_view(sid):
         ).fetchone()
         subCat = dict(sub)
         if subCat['default_card']:
-            card = get_one_card(subCat['default_card'])
+            card = card_object.get_one_by_id(subCat['default_card'])
             subCat['default_card'] = card['name'] + ' - ' + card['bank']
         if subCat['default_degree']:
-            degree = get_one_degree(subCat['default_degree'])
+            degree = degree_object.get_one_by_id(subCat['default_degree'])
             subCat['default_degree'] = degree['name']
         return render_template('setting/view/view_subcategory.html', sub_category=subCat)
     except Exception as e:
@@ -150,6 +156,9 @@ def sub_category_view(sid):
 def sub_category_edit(sid):
     category = Category()
     sub_category = SubCategory()
+    card_object = Card()
+    degree_object = Degree()
+
     if request.method == 'POST':
         sub_name = request.form['name']
         cat_id = request.form['c_id']
@@ -174,8 +183,8 @@ def sub_category_edit(sid):
         try:
             subCat = sub_category.get_one_by_id(sid)
             cat = category.get_all_in_order()
-            cards = get_all_cards()
-            degrees = get_all_degrees()
+            cards = card_object.get_all_in_order(order='bank, name')
+            degrees = degree_object.get_all_in_order()
             return render_template('setting/edit/edit_subcategory.html',
                                    sub_category=subCat, category=cat, cards=cards, degrees=degrees)
         except Exception as e:
@@ -210,8 +219,9 @@ def card_add():
 
 @bp.route('/card/<int:id>/view')
 def card_view(id):
+    card_object = Card()
     try:
-        card = get_one_card(id)
+        card = card_object.get_one_by_id(id)
         return render_template('setting/view/view_card.html', card=card)
     except Exception as e:
         flash(e, 'error')
@@ -220,6 +230,7 @@ def card_view(id):
 
 @bp.route('/card/<int:id>/edit', methods=('GET', 'POST'))
 def card_edit(id):
+    card_object = Card()
     if request.method == 'POST':
         card_name = request.form['name']
         bank_name = request.form['bank']
@@ -241,7 +252,7 @@ def card_edit(id):
             return redirect(url_for('setting.card_view', id=id))
     else:
         try:
-            card = get_one_card(id)
+            card = card_object.get_one_by_id(id)
             return render_template('setting/edit/edit_card.html', card=card)
         except Exception as e:
             flash(e, 'error')
@@ -272,8 +283,9 @@ def degree_add():
 
 @bp.route('/degree/<int:id>/view')
 def degree_view(id):
+    degree_object = Degree()
     try:
-        degree = get_one_degree(id)
+        degree = degree_object.get_one_by_id(id)
         return render_template('setting/view/view_degree.html', degree=degree)
     except Exception as e:
         flash(e, 'error')
@@ -282,6 +294,7 @@ def degree_view(id):
 
 @bp.route('/degree/<int:id>/edit', methods=('GET', 'POST'))
 def degree_edit(id):
+    degree_object = Degree()
     if request.method == 'POST':
         degree_name = request.form['name']
 
@@ -300,7 +313,7 @@ def degree_edit(id):
             return redirect(url_for('setting.degree_view', id=id))
     else:
         try:
-            degree = get_one_degree(id)
+            degree = degree_object.get_one_by_id(id)
             return render_template('setting/edit/edit_degree.html', degree=degree)
         except Exception as e:
             flash(e, 'error')

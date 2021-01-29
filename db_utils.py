@@ -119,61 +119,6 @@ Get the setting from database
 """
 
 
-def get_all_cards(order='bank, name'):
-    card = get_db().execute(
-        'SELECT id, name, bank, cur_balance, pay_date, last_statement'
-        ' FROM cards'
-        ' ORDER BY ?',
-        (order,)
-    ).fetchall()
-    return card
-
-
-def get_one_card(card_id=0):
-    card = get_db().execute(
-        'SELECT id, name, bank, cur_balance, pay_date, last_statement'
-        ' FROM cards'
-        ' WHERE id = ?',
-        (card_id,)
-    ).fetchone()
-
-    if card is None:
-        abort(404, f"Card id {card_id} doesn't exist.")
-
-    return card
-
-
-def get_card_by_name(card_name):
-    card_info = card_name.split(' - ')
-    card = get_db().execute(
-        'SELECT id, name, bank, cur_balance, pay_date, last_statement'
-        ' FROM cards'
-        ' WHERE name = ? and bank = ?',
-        (card_info[0], card_info[1])
-    ).fetchone()
-    return card
-
-
-def get_all_degrees(order='name'):
-    degrees = get_db().execute(
-        'SELECT id, name'
-        ' FROM degrees'
-        ' ORDER BY ?',
-        (order,)
-    ).fetchall()
-    return degrees
-
-
-def get_one_degree(id):
-    degree = get_db().execute(
-        'SELECT id, name'
-        ' FROM degrees'
-        ' WHERE id = ?',
-        (id,)
-    ).fetchone()
-    return degree
-
-
 def get_spending_years():
     years = get_db().execute(
         'SELECT DISTINCT yr'

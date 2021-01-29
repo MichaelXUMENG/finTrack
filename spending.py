@@ -8,10 +8,9 @@ from flask import(
     Blueprint, flash, g, redirect, render_template, request, session, url_for, current_app, after_this_request
 )
 from .db_utils import (
-    get_all_cards, get_one_card,
-    get_all_degrees, get_one_spending, get_card_by_name
+    get_one_spending
 )
-from .db_utils import Category, SubCategory
+from .db_utils import Category, SubCategory, Card, Degree
 from finTrack.db import get_db
 from .read_in_pdf_statement import read_pdf_statement_chase, read_apple_csv_transactions, read_pdf_statement_citi
 from werkzeug.utils import secure_filename
@@ -22,6 +21,8 @@ bp = Blueprint('spending', __name__, url_prefix='/spending')
 def spending_add():
     category = Category()
     sub_category = SubCategory()
+    card_object = Card()
+    degree_object = Degree()
 
     if request.method == 'POST':
         name = request.form['name']
@@ -47,7 +48,7 @@ def spending_add():
             day = int(date[mbar + 1:mbar + dbar + 1])
 
         try:
-            balance = get_one_card(card_id)['cur_balance']
+            balance = card_object.get_one_by_id(card_id)['cur_balance']
             balance += amount
 
             db = get_db()
@@ -74,8 +75,8 @@ def spending_add():
         try:
             cats = category.get_all_in_order()
             subCats = sub_category.get_all_in_order()
-            cards = get_all_cards()
-            degrees = get_all_degrees()
+            cards = card_object.get_all_in_order(order='bank, name')
+            degrees = degree_object.get_all_in_order()
             settings = {'cats': cats, 'subCats': subCats, 'cards': cards, 'degrees': degrees}
             return render_template('spending/add_spending.html', settings=settings)
         except Exception as e:
@@ -87,6 +88,9 @@ def spending_add():
 def spending_add_from_card(card):
     category = Category()
     sub_category = SubCategory()
+    card_object = Card()
+    degree_object = Degree()
+
     if request.method == 'POST':
         name = request.form['name']
         amount = float(request.form['amount'])
@@ -110,7 +114,7 @@ def spending_add_from_card(card):
             day = int(date[mbar + 1:mbar + dbar + 1])
 
         try:
-            balance = get_one_card(card)['cur_balance']
+            balance = card_object.get_one_by_id(card)['cur_balance']
             balance += amount
 
             db = get_db()
@@ -137,8 +141,8 @@ def spending_add_from_card(card):
         try:
             cats = category.get_all_in_order()
             subCats = sub_category.get_all_in_order()
-            degrees = get_all_degrees()
-            card_info = get_one_card(card)
+            degrees = degree_object.get_all_in_order()
+            card_info = card_object.get_one_by_id(card)
             settings = {'cats': cats, 'subCats': subCats, 'cards': card_info, 'degrees': degrees}
             return render_template('spending/add_card_spending.html', settings=settings)
         except Exception as e:
@@ -222,9 +226,11 @@ def spending_add_from_statement():
     # getting those basic information from the database
     category = Category()
     sub_category = SubCategory()
+    degree_object = Degree()
+
     cats = category.get_all_in_order()
     subCats = sub_category.get_all_in_order()
-    degrees = get_all_degrees()
+    degrees = degree_object.get_all_in_order()
     settings = {'cats': cats, 'subCats': subCats, 'degrees': degrees}
     subcat_degree_map = {sub_category['id']: sub_category['default_degree'] for sub_category in subCats}
 
@@ -236,20 +242,23 @@ def spending_add_from_statement():
 
 @bp.route('/save_statement', methods=['POST'])
 def save_statement_data():
+    sub_category_object = SubCategory()
+    card_object = Card()
+
     # initiate the transaction counts and valid transactions with the count of transactions and 0
     transaction_counts, valid_transactions = int(request.form.get('count', 0)), 0
     # get the card name from the form
     card_name = request.form.get('card', '')
     statement_name = request.form.get('filename', '')
     # then get the card database entry by the card name
-    card = get_card_by_name(card_name)
+    card = card_object.get_one_card_by_name(card_name)
     total_amount = card['cur_balance']
     # get the preset from form, which is in json format, and converted into dictionary using ast.literal_eval()
     preset = ast.literal_eval(request.form.get('preset', ''))
 
     # Get a hold of a database entry
     db = get_db()
-    sub_category_object = SubCategory()
+
     try:
         # loop through all the transactions
         for index in range(transaction_counts):
@@ -347,6 +356,9 @@ def save_statement_data():
 def spending_edit(id):
     category = Category()
     sub_category = SubCategory()
+    card_object = Card()
+    degree_object = Degree()
+
     if request.method == 'POST':
         name = request.form['name']
         amount = float(request.form['amount'])
@@ -370,7 +382,7 @@ def spending_edit(id):
             day = int(date[mbar + 1:mbar + dbar + 1])
 
         try:
-            balance = get_one_card(card_id)['cur_balance']
+            balance = card_object.get_one_by_id(card_id)['cur_balance']
             balance += amount
 
             db = get_db()
@@ -394,8 +406,8 @@ def spending_edit(id):
         try:
             cats = category.get_all_in_order()
             subCats = sub_category.get_all_in_order()
-            cards = get_all_cards()
-            degrees = get_all_degrees()
+            cards = card_object.get_all_in_order(order='bank, name')
+            degrees = degree_object.get_all_in_order()
             spending = get_one_spending(id)
             date = str(spending['mon'])+'/'+str(spending['daynum'])+'/'+str(spending['yr'])
             settings = {'cats': cats, 'subCats': subCats, 'cards': cards, 'degrees': degrees}
