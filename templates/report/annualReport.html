@@ -31,7 +31,11 @@
         <div class="catgraph">
             <img src="/graph/{{ year }}/annualReport.png" alt="Annual Report" />
         </div>
+
     </div>
+    <div id="chart" class="chart">
+    </div>
+    <div>{{ div_graph | safe }}</div>
 
     <br>
     <img src="/graph/{{ year }}/utilityReport.png" alt="Utility Report" />
@@ -47,4 +51,17 @@
         </div>
     </div>
 
+{% endblock %}
+
+{% block script %}
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.6/d3.min.js"></script>
+    <script src="https://code.jquery.com/jquery-2.1.4.min.js"></script>
+    <!-- Plotly.js -->
+    <script src="https://d14fo0winaifog.cloudfront.net/plotly-basic.js"></script>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+
+    <script type="text/javascript">
+        var graphs = {{ graphJSON | safe }};
+        Plotly.plot('chart',graphs,{});
+    </script>
 {% endblock %}

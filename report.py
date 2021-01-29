@@ -8,6 +8,7 @@ from .db_utils import (
     get_all_category, get_all_subCategory, get_all_cards, get_all_degrees, get_all_spendings_card,
     get_total_spending_month_cat, get_one_category, get_subcats_from_a_cat
 )
+from .interactive_graphs import interactive_annual_report, interactive_annual_report_as_div
 
 bp = Blueprint('report', __name__, url_prefix='/report')
 
@@ -113,9 +114,11 @@ def view_annual_summary(year):
     try:
         sum = get_month_total_spending_year(year)
         allAmount = get_total_spending_year(year)
+        graphJSON = interactive_annual_report(year)
+        div_graph = interactive_annual_report_as_div(year)
     except Exception as e:
         flash(e, 'error')
-    return render_template("report/annualReport.html", year=year, sum=sum, amount=allAmount)
+    return render_template("report/annualReport.html", year=year, sum=sum, amount=allAmount, graphJSON=graphJSON, div_graph=div_graph)
 
 
 @bp.route('/docSpending')
