@@ -5,9 +5,10 @@ from .db_utils import (
     get_all_spendings, get_doctor_spendings, get_spendings_card, get_spendings_month_cat,
     get_total_spending_month, get_category_total_spending_month, get_month_total_spending_year,
     get_total_spending_year, get_mon_total_spending_doc, get_total_spending_doc, get_spending_years,
-    get_all_category, get_all_subCategory, get_all_cards, get_all_degrees, get_all_spendings_card,
-    get_total_spending_month_cat, get_one_category, get_subcats_from_a_cat
+    get_all_cards, get_all_degrees, get_all_spendings_card,
+    get_total_spending_month_cat
 )
+from .db_utils import Category, SubCategory
 from .interactive_graphs import interactive_annual_report, interactive_annual_report_as_div
 
 bp = Blueprint('report', __name__, url_prefix='/report')
@@ -31,11 +32,13 @@ def view_all_spending():
     subs = {}
     cards = {}
     degrees = {}
+    category = Category()
+    sub_category = SubCategory()
     try:
         spendings = get_all_spendings()
-        for pair in get_all_category(order='id'):
+        for pair in category.get_all_in_order(order='id'):
             cats[pair['id']] = pair['name']
-        for pair in get_all_subCategory(order='id'):
+        for pair in sub_category.get_all_in_order(order='id'):
             subs[pair['id']] = pair['name']
         for pair in get_all_cards(order='id'):
             cards[pair['id']] = pair['name']
@@ -53,11 +56,13 @@ def view_all_spending_card(card):
     subs = {}
     cards = {}
     degrees = {}
+    category = Category()
+    sub_category = SubCategory()
     try:
         spendings = get_spendings_card(card)
-        for pair in get_all_category(order='id'):
+        for pair in category.get_all_in_order(order='id'):
             cats[pair['id']] = pair['name']
-        for pair in get_all_subCategory(order='id'):
+        for pair in sub_category.get_all_in_order(order='id'):
             subs[pair['id']] = pair['name']
         for pair in get_all_cards(order='id'):
             cards[pair['id']] = pair['name']
@@ -76,11 +81,13 @@ def add_spending_card(card):
     cards = {}
     degrees = {}
     spendings = {}
+    category = Category()
+    sub_category = SubCategory()
     try:
         spendings = get_all_spendings_card(card)
-        for pair in get_all_category(order='id'):
+        for pair in category.get_all_in_order(order='id'):
             cats[pair['id']] = pair['name']
-        for pair in get_all_subCategory(order='id'):
+        for pair in sub_category.get_all_in_order(order='id'):
             subs[pair['id']] = pair['name']
         for pair in get_all_cards(order='id'):
             cards[pair['id']] = pair['name']
@@ -97,10 +104,11 @@ def view_monthly_summary(year, month):
     cats = {}
     sum = {}
     cat_sum = {}
+    category = Category()
     try:
         sum = get_total_spending_month(year, month)
         cat_sum = get_category_total_spending_month(year, month)
-        for pair in get_all_category(order='id'):
+        for pair in category.get_all_in_order(order='id'):
             cats[pair['id']] = pair['name']
     except Exception as e:
         flash(e, 'error')
@@ -143,11 +151,13 @@ def monthlyCatTransaction(year, month, category):
     transactions = {}
     catNm = {}
     totalSpending = 0
+    category_object = Category()
+    sub_category = SubCategory()
     try:
         transactions = get_spendings_month_cat(year, month, category)
         totalSpending = get_total_spending_month_cat(year, month, category)
-        catNm = get_one_category(category)['name']
-        subCat = get_subcats_from_a_cat(category)
+        catNm = category_object.get_one_item_by_id(category)['name']
+        subCat = sub_category.get_all_subcategories_in_category(category)
         for pair in subCat:
             subs[pair['id']] = pair['name']
         for pair in get_all_cards(order='id'):
@@ -167,11 +177,12 @@ def doctorSummary():
     degrees = {}
     transactions = {}
     monthSummary, totalSpending = 0, 0
+    sub_category = SubCategory()
     try:
         transactions = get_doctor_spendings()
         monthSummary = get_mon_total_spending_doc()
         totalSpending = get_total_spending_doc()['sum']
-        subCat = get_subcats_from_a_cat(16)
+        subCat = sub_category.get_all_subcategories_in_category(16)
         for pair in subCat:
             subs[pair['id']] = pair['name']
         for pair in get_all_cards(order='id'):

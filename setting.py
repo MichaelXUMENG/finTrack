@@ -3,9 +3,10 @@ from flask import(
     Blueprint, flash, redirect, render_template, request, url_for
 )
 from .db_utils import (
-    get_all_category, get_one_category, get_all_subCategory, get_one_subCategory, get_all_cards, get_one_card,
+    get_all_cards, get_one_card,
     get_all_degrees, get_one_degree
 )
+from .db_utils import Category, SubCategory
 from finTrack.db import get_db
 
 bp = Blueprint('setting', __name__, url_prefix='/setting')
@@ -14,9 +15,11 @@ bp = Blueprint('setting', __name__, url_prefix='/setting')
 @bp.route('/')
 def catalog():
     settings = {}
+    category = Category()
+    sub_category = SubCategory()
     try:
-        categories = get_all_category()
-        sub_categories = get_all_subCategory()
+        categories = category.get_all_in_order()
+        sub_categories = sub_category.get_all_in_order()
         cards = get_all_cards()
         degrees = get_all_degrees()
 
@@ -50,8 +53,9 @@ def category_add():
 
 @bp.route('/category/<int:cid>/view')
 def category_view(cid):
+    category = Category()
     try:
-        cat = get_one_category(cid)
+        cat = category.get_one_item_by_id(cid)
         return render_template('setting/view/view_category.html', category=cat)
     except Exception as e:
         flash(e, 'error')
@@ -77,8 +81,9 @@ def category_edit(cid):
         finally:
             return redirect(url_for('setting.category_view', cid=cid))
     else:
+        category = Category()
         try:
-            cat = get_one_category(cid)
+            cat = category.get_one_item_by_id(cid)
             return render_template('setting/edit/edit_category.html', category=cat)
         except Exception as e:
             flash(e, 'error')
@@ -107,8 +112,9 @@ def sub_category_add(cid):
         finally:
             return redirect(url_for('setting.catalog'))
     else:
+        category = Category()
         try:
-            cat = get_one_category(cid)
+            cat = category.get_one_item_by_id(cid)
             cards = get_all_cards()
             degrees = get_all_degrees()
             return render_template('setting/add_subcategory.html', category=cat, cards=cards, degrees=degrees)
@@ -142,6 +148,8 @@ def sub_category_view(sid):
 
 @bp.route('/sub-category/<int:sid>/edit', methods=('GET', 'POST'))
 def sub_category_edit(sid):
+    category = Category()
+    sub_category = SubCategory()
     if request.method == 'POST':
         sub_name = request.form['name']
         cat_id = request.form['c_id']
@@ -162,9 +170,10 @@ def sub_category_edit(sid):
         finally:
             return redirect(url_for('setting.sub_category_view', sid=sid))
     else:
+
         try:
-            subCat = get_one_subCategory(sid)
-            cat = get_all_category()
+            subCat = sub_category.get_one_item_by_id(sid)
+            cat = category.get_all_in_order()
             cards = get_all_cards()
             degrees = get_all_degrees()
             return render_template('setting/edit/edit_subcategory.html',

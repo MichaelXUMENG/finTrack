@@ -8,9 +8,10 @@ from flask import(
     Blueprint, flash, g, redirect, render_template, request, session, url_for, current_app, after_this_request
 )
 from .db_utils import (
-    get_all_category, get_all_subCategory, get_one_subCategory, get_all_cards, get_one_card,
+    get_all_cards, get_one_card,
     get_all_degrees, get_one_spending, get_card_by_name
 )
+from .db_utils import Category, SubCategory
 from finTrack.db import get_db
 from .read_in_pdf_statement import read_pdf_statement_chase, read_apple_csv_transactions, read_pdf_statement_citi
 from werkzeug.utils import secure_filename
@@ -19,11 +20,14 @@ bp = Blueprint('spending', __name__, url_prefix='/spending')
 
 @bp.route('/add', methods=('GET', 'POST'))
 def spending_add():
+    category = Category()
+    sub_category = SubCategory()
+
     if request.method == 'POST':
         name = request.form['name']
         amount = float(request.form['amount'])
         sub_id = request.form['sub_category']
-        cat_id = get_one_subCategory(sub_id)['c_id']
+        cat_id = sub_category.get_one_item_by_id(sub_id)['c_id']
         date = request.form['date']
         card_id = request.form['card']
         degree_id = request.form['degree']
@@ -68,8 +72,8 @@ def spending_add():
                 return redirect(url_for('spending.spending_add'))
     else:
         try:
-            cats = get_all_category()
-            subCats = get_all_subCategory()
+            cats = category.get_all_in_order()
+            subCats = sub_category.get_all_in_order()
             cards = get_all_cards()
             degrees = get_all_degrees()
             settings = {'cats': cats, 'subCats': subCats, 'cards': cards, 'degrees': degrees}
@@ -81,11 +85,13 @@ def spending_add():
 
 @bp.route('/<int:card>/add', methods=('GET', 'POST'))
 def spending_add_from_card(card):
+    category = Category()
+    sub_category = SubCategory()
     if request.method == 'POST':
         name = request.form['name']
         amount = float(request.form['amount'])
         sub_id = request.form['sub_category']
-        cat_id = get_one_subCategory(sub_id)['c_id']
+        cat_id = sub_category.get_one_item_by_id(sub_id)['c_id']
         date = request.form['date']
         degree_id = request.form['degree']
         comments = request.form['comments']
@@ -129,8 +135,8 @@ def spending_add_from_card(card):
                 return redirect(url_for('spending.spending_add_from_card', card=card))
     else:
         try:
-            cats = get_all_category()
-            subCats = get_all_subCategory()
+            cats = category.get_all_in_order()
+            subCats = sub_category.get_all_in_order()
             degrees = get_all_degrees()
             card_info = get_one_card(card)
             settings = {'cats': cats, 'subCats': subCats, 'cards': card_info, 'degrees': degrees}
@@ -214,8 +220,10 @@ def spending_add_from_statement():
     os.remove(path_to_statement)
 
     # getting those basic information from the database
-    cats = get_all_category()
-    subCats = get_all_subCategory()
+    category = Category()
+    sub_category = SubCategory()
+    cats = category.get_all_in_order()
+    subCats = sub_category.get_all_in_order()
     degrees = get_all_degrees()
     settings = {'cats': cats, 'subCats': subCats, 'degrees': degrees}
     subcat_degree_map = {sub_category['id']: sub_category['default_degree'] for sub_category in subCats}
@@ -241,6 +249,7 @@ def save_statement_data():
 
     # Get a hold of a database entry
     db = get_db()
+    sub_category_object = SubCategory()
     try:
         # loop through all the transactions
         for index in range(transaction_counts):
@@ -256,7 +265,7 @@ def save_statement_data():
                     'note': request.form.get(f'note{index + 1}', ''),
                 }
                 # get the sub_category object from database using the sub_category_id
-                sub_category = get_one_subCategory(single_trans['category'])
+                sub_category = sub_category_object.get_one_item_by_id(single_trans['category'])
                 # match the date information from transaction using regular expression
                 # by doing so, I can get the year, month and day using the position of the date_match
                 date_match = re.fullmatch(r"([0-9]{2})/([0-9]{2})/([0-9]{4})", single_trans['date'])
@@ -336,11 +345,13 @@ def save_statement_data():
 
 @bp.route('/<int:id>/eidt/', methods=('GET', 'POST'))
 def spending_edit(id):
+    category = Category()
+    sub_category = SubCategory()
     if request.method == 'POST':
         name = request.form['name']
         amount = float(request.form['amount'])
         sub_id = request.form['sub_category']
-        cat_id = get_one_subCategory(sub_id)['c_id']
+        cat_id = sub_category.get_one_item_by_id(sub_id)['c_id']
         date = request.form['date']
         card_id = request.form['card']
         degree_id = request.form['degree']
@@ -381,8 +392,8 @@ def spending_edit(id):
             return redirect(url_for('report.view_all_spending'))
     else:
         try:
-            cats = get_all_category()
-            subCats = get_all_subCategory()
+            cats = category.get_all_in_order()
+            subCats = sub_category.get_all_in_order()
             cards = get_all_cards()
             degrees = get_all_degrees()
             spending = get_one_spending(id)
