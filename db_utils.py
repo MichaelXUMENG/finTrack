@@ -41,7 +41,7 @@ class AllSettings(object):
             connection.close()
         return all_items
 
-    def get_one_item_by_id(self, item_id: int):
+    def get_one_by_id(self, item_id: int):
         """
         Get one item by its id
         :param item_id: item id

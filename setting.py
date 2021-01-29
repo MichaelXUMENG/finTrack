@@ -55,7 +55,7 @@ def category_add():
 def category_view(cid):
     category = Category()
     try:
-        cat = category.get_one_item_by_id(cid)
+        cat = category.get_one_by_id(cid)
         return render_template('setting/view/view_category.html', category=cat)
     except Exception as e:
         flash(e, 'error')
@@ -83,7 +83,7 @@ def category_edit(cid):
     else:
         category = Category()
         try:
-            cat = category.get_one_item_by_id(cid)
+            cat = category.get_one_by_id(cid)
             return render_template('setting/edit/edit_category.html', category=cat)
         except Exception as e:
             flash(e, 'error')
@@ -114,7 +114,7 @@ def sub_category_add(cid):
     else:
         category = Category()
         try:
-            cat = category.get_one_item_by_id(cid)
+            cat = category.get_one_by_id(cid)
             cards = get_all_cards()
             degrees = get_all_degrees()
             return render_template('setting/add_subcategory.html', category=cat, cards=cards, degrees=degrees)
@@ -172,7 +172,7 @@ def sub_category_edit(sid):
     else:
 
         try:
-            subCat = sub_category.get_one_item_by_id(sid)
+            subCat = sub_category.get_one_by_id(sid)
             cat = category.get_all_in_order()
             cards = get_all_cards()
             degrees = get_all_degrees()

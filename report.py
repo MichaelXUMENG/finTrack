@@ -156,7 +156,7 @@ def monthlyCatTransaction(year, month, category):
     try:
         transactions = get_spendings_month_cat(year, month, category)
         totalSpending = get_total_spending_month_cat(year, month, category)
-        catNm = category_object.get_one_item_by_id(category)['name']
+        catNm = category_object.get_one_by_id(category)['name']
         subCat = sub_category.get_all_subcategories_in_category(category)
         for pair in subCat:
             subs[pair['id']] = pair['name']

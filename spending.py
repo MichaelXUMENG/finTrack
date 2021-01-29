@@ -27,7 +27,7 @@ def spending_add():
         name = request.form['name']
         amount = float(request.form['amount'])
         sub_id = request.form['sub_category']
-        cat_id = sub_category.get_one_item_by_id(sub_id)['c_id']
+        cat_id = sub_category.get_one_by_id(sub_id)['c_id']
         date = request.form['date']
         card_id = request.form['card']
         degree_id = request.form['degree']
@@ -91,7 +91,7 @@ def spending_add_from_card(card):
         name = request.form['name']
         amount = float(request.form['amount'])
         sub_id = request.form['sub_category']
-        cat_id = sub_category.get_one_item_by_id(sub_id)['c_id']
+        cat_id = sub_category.get_one_by_id(sub_id)['c_id']
         date = request.form['date']
         degree_id = request.form['degree']
         comments = request.form['comments']
@@ -265,7 +265,7 @@ def save_statement_data():
                     'note': request.form.get(f'note{index + 1}', ''),
                 }
                 # get the sub_category object from database using the sub_category_id
-                sub_category = sub_category_object.get_one_item_by_id(single_trans['category'])
+                sub_category = sub_category_object.get_one_by_id(single_trans['category'])
                 # match the date information from transaction using regular expression
                 # by doing so, I can get the year, month and day using the position of the date_match
                 date_match = re.fullmatch(r"([0-9]{2})/([0-9]{2})/([0-9]{4})", single_trans['date'])
@@ -351,7 +351,7 @@ def spending_edit(id):
         name = request.form['name']
         amount = float(request.form['amount'])
         sub_id = request.form['sub_category']
-        cat_id = sub_category.get_one_item_by_id(sub_id)['c_id']
+        cat_id = sub_category.get_one_by_id(sub_id)['c_id']
         date = request.form['date']
         card_id = request.form['card']
         degree_id = request.form['degree']
