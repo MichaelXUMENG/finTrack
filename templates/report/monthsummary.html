@@ -4,7 +4,7 @@
 {% block content %}
     <h1> {{ month }} of Year {{ year }}</h1>
     <h2>Total Spending:
-    {{ sum['sum'] }}
+    {{ sum }}
     </h2>
     <br>
     <div class="detail">
@@ -32,7 +32,7 @@
             </table>
         </div>
         &emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;
-        <div class="catgraph">
+        <div class="catgraph">AF
             <img src="/graph/{{ year }}/{{ month }}/monthReport.png" alt="Monthly Report" />
         </div>
     </div>

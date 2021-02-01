@@ -1,19 +1,18 @@
-import functools
 import ast
+import csv
 import json
 import os
 import re
-import csv
-from flask import(
-    Blueprint, flash, g, redirect, render_template, request, session, url_for, current_app, after_this_request
+
+from flask import (
+    Blueprint, flash, redirect, render_template, request, url_for, current_app
 )
-from .db_utils import (
-    get_one_spending
-)
-from .db_utils import Category, SubCategory, Card, Degree
-from finTrack.db import get_db
-from .read_in_pdf_statement import read_pdf_statement_chase, read_apple_csv_transactions, read_pdf_statement_citi
 from werkzeug.utils import secure_filename
+
+from finTrack.db import get_db
+from .db_utils import Category, SubCategory, Card, Degree, Spending
+from .read_in_pdf_statement import read_pdf_statement_chase, read_apple_csv_transactions, read_pdf_statement_citi
+
 bp = Blueprint('spending', __name__, url_prefix='/spending')
 
 
@@ -28,7 +27,7 @@ def spending_add():
         name = request.form['name']
         amount = float(request.form['amount'])
         sub_id = request.form['sub_category']
-        cat_id = sub_category.get_one_by_id(sub_id)['c_id']
+        cat_id = sub_category.fetch_one_by_id(sub_id)['c_id']
         date = request.form['date']
         card_id = request.form['card']
         degree_id = request.form['degree']
@@ -48,7 +47,7 @@ def spending_add():
             day = int(date[mbar + 1:mbar + dbar + 1])
 
         try:
-            balance = card_object.get_one_by_id(card_id)['cur_balance']
+            balance = card_object.fetch_one_by_id(card_id)['cur_balance']
             balance += amount
 
             db = get_db()
@@ -73,10 +72,10 @@ def spending_add():
                 return redirect(url_for('spending.spending_add'))
     else:
         try:
-            cats = category.get_all_in_order()
-            subCats = sub_category.get_all_in_order()
-            cards = card_object.get_all_in_order(order='bank, name')
-            degrees = degree_object.get_all_in_order()
+            cats = category.fetch_all_in_order()
+            subCats = sub_category.fetch_all_in_order()
+            cards = card_object.fetch_all_in_order(order='bank, name')
+            degrees = degree_object.fetch_all_in_order()
             settings = {'cats': cats, 'subCats': subCats, 'cards': cards, 'degrees': degrees}
             return render_template('spending/add_spending.html', settings=settings)
         except Exception as e:
@@ -95,7 +94,7 @@ def spending_add_from_card(card):
         name = request.form['name']
         amount = float(request.form['amount'])
         sub_id = request.form['sub_category']
-        cat_id = sub_category.get_one_by_id(sub_id)['c_id']
+        cat_id = sub_category.fetch_one_by_id(sub_id)['c_id']
         date = request.form['date']
         degree_id = request.form['degree']
         comments = request.form['comments']
@@ -114,7 +113,7 @@ def spending_add_from_card(card):
             day = int(date[mbar + 1:mbar + dbar + 1])
 
         try:
-            balance = card_object.get_one_by_id(card)['cur_balance']
+            balance = card_object.fetch_one_by_id(card)['cur_balance']
             balance += amount
 
             db = get_db()
@@ -139,10 +138,10 @@ def spending_add_from_card(card):
                 return redirect(url_for('spending.spending_add_from_card', card=card))
     else:
         try:
-            cats = category.get_all_in_order()
-            subCats = sub_category.get_all_in_order()
-            degrees = degree_object.get_all_in_order()
-            card_info = card_object.get_one_by_id(card)
+            cats = category.fetch_all_in_order()
+            subCats = sub_category.fetch_all_in_order()
+            degrees = degree_object.fetch_all_in_order()
+            card_info = card_object.fetch_one_by_id(card)
             settings = {'cats': cats, 'subCats': subCats, 'cards': card_info, 'degrees': degrees}
             return render_template('spending/add_card_spending.html', settings=settings)
         except Exception as e:
@@ -228,9 +227,9 @@ def spending_add_from_statement():
     sub_category = SubCategory()
     degree_object = Degree()
 
-    cats = category.get_all_in_order()
-    subCats = sub_category.get_all_in_order()
-    degrees = degree_object.get_all_in_order()
+    cats = category.fetch_all_in_order()
+    subCats = sub_category.fetch_all_in_order()
+    degrees = degree_object.fetch_all_in_order()
     settings = {'cats': cats, 'subCats': subCats, 'degrees': degrees}
     subcat_degree_map = {sub_category['id']: sub_category['default_degree'] for sub_category in subCats}
 
@@ -251,7 +250,7 @@ def save_statement_data():
     card_name = request.form.get('card', '')
     statement_name = request.form.get('filename', '')
     # then get the card database entry by the card name
-    card = card_object.get_one_card_by_name(card_name)
+    card = card_object.fetch_one_card_by_name(card_name)
     total_amount = card['cur_balance']
     # get the preset from form, which is in json format, and converted into dictionary using ast.literal_eval()
     preset = ast.literal_eval(request.form.get('preset', ''))
@@ -274,7 +273,7 @@ def save_statement_data():
                     'note': request.form.get(f'note{index + 1}', ''),
                 }
                 # get the sub_category object from database using the sub_category_id
-                sub_category = sub_category_object.get_one_by_id(single_trans['category'])
+                sub_category = sub_category_object.fetch_one_by_id(single_trans['category'])
                 # match the date information from transaction using regular expression
                 # by doing so, I can get the year, month and day using the position of the date_match
                 date_match = re.fullmatch(r"([0-9]{2})/([0-9]{2})/([0-9]{4})", single_trans['date'])
@@ -358,12 +357,13 @@ def spending_edit(id):
     sub_category = SubCategory()
     card_object = Card()
     degree_object = Degree()
+    spending_object = Spending()
 
     if request.method == 'POST':
         name = request.form['name']
         amount = float(request.form['amount'])
         sub_id = request.form['sub_category']
-        cat_id = sub_category.get_one_by_id(sub_id)['c_id']
+        cat_id = sub_category.fetch_one_by_id(sub_id)['c_id']
         date = request.form['date']
         card_id = request.form['card']
         degree_id = request.form['degree']
@@ -382,7 +382,7 @@ def spending_edit(id):
             day = int(date[mbar + 1:mbar + dbar + 1])
 
         try:
-            balance = card_object.get_one_by_id(card_id)['cur_balance']
+            balance = card_object.fetch_one_by_id(card_id)['cur_balance']
             balance += amount
 
             db = get_db()
@@ -404,11 +404,11 @@ def spending_edit(id):
             return redirect(url_for('report.view_all_spending'))
     else:
         try:
-            cats = category.get_all_in_order()
-            subCats = sub_category.get_all_in_order()
-            cards = card_object.get_all_in_order(order='bank, name')
-            degrees = degree_object.get_all_in_order()
-            spending = get_one_spending(id)
+            cats = category.fetch_all_in_order()
+            subCats = sub_category.fetch_all_in_order()
+            cards = card_object.fetch_all_in_order(order='bank, name')
+            degrees = degree_object.fetch_all_in_order()
+            spending = spending_object.fetch_one_by_id(id)
             date = str(spending['mon'])+'/'+str(spending['daynum'])+'/'+str(spending['yr'])
             settings = {'cats': cats, 'subCats': subCats, 'cards': cards, 'degrees': degrees}
             return render_template('spending/edit_spending.html', settings=settings, spending=spending, date=date)

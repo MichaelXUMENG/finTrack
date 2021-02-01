@@ -1,14 +1,8 @@
-from flask import(
-    Blueprint, flash, g, redirect, render_template, request, session, url_for, Response
+from flask import (
+    Blueprint, flash, render_template
 )
-from .db_utils import (
-    get_all_spendings, get_doctor_spendings, get_spendings_card, get_spendings_month_cat,
-    get_total_spending_month, get_category_total_spending_month, get_month_total_spending_year,
-    get_total_spending_year, get_mon_total_spending_doc, get_total_spending_doc, get_spending_years,
-    get_all_spendings_card,
-    get_total_spending_month_cat
-)
-from .db_utils import Category, SubCategory, Card, Degree
+
+from .db_utils import Category, SubCategory, Card, Degree, Spending, DoctorSpending
 from .interactive_graphs import interactive_annual_report, interactive_annual_report_as_div
 
 bp = Blueprint('report', __name__, url_prefix='/report')
@@ -16,11 +10,13 @@ bp = Blueprint('report', __name__, url_prefix='/report')
 
 @bp.route('/')
 def catalog():
+    spending_object = Spending()
+
     card_object = Card()
     years, cards = {}, {}
     try:
-        years = get_spending_years()
-        cards = card_object.get_all_in_order(order='id')
+        years = spending_object.get_years()
+        cards = card_object.fetch_all_in_order(order='id')
     except Exception as e:
         flash(e, 'error')
     return render_template('report/catalog.html', years=years, cards=cards)
@@ -37,16 +33,17 @@ def view_all_spending():
     sub_category = SubCategory()
     card_object = Card()
     degree_object = Degree()
+    spending_object = Spending()
 
     try:
-        spendings = get_all_spendings()
-        for pair in category.get_all_in_order(order='id'):
+        spendings = spending_object.fetch_all_category_spending(include_doctor=False)
+        for pair in category.fetch_all_in_order(order='id'):
             cats[pair['id']] = pair['name']
-        for pair in sub_category.get_all_in_order(order='id'):
+        for pair in sub_category.fetch_all_in_order(order='id'):
             subs[pair['id']] = pair['name']
-        for pair in card_object.get_all_in_order(order='id'):
+        for pair in card_object.fetch_all_in_order(order='id'):
             cards[pair['id']] = pair['name']
-        for pair in degree_object.get_all_in_order(order='id'):
+        for pair in degree_object.fetch_all_in_order(order='id'):
             degrees[pair['id']] = pair['name']
     except Exception as e:
         flash(e, 'error')
@@ -64,16 +61,17 @@ def view_all_spending_card(card):
     sub_category = SubCategory()
     card_object = Card()
     degree_object = Degree()
+    spending_object = Spending()
 
     try:
-        spendings = get_spendings_card(card)
-        for pair in category.get_all_in_order(order='id'):
+        spendings = spending_object.fetch_all_spendings_from_a_card(card, include_doctor=False)
+        for pair in category.fetch_all_in_order(order='id'):
             cats[pair['id']] = pair['name']
-        for pair in sub_category.get_all_in_order(order='id'):
+        for pair in sub_category.fetch_all_in_order(order='id'):
             subs[pair['id']] = pair['name']
-        for pair in card_object.get_all_in_order(order='id'):
+        for pair in card_object.fetch_all_in_order(order='id'):
             cards[pair['id']] = pair['name']
-        for pair in degree_object.get_all_in_order(order='id'):
+        for pair in degree_object.fetch_all_in_order(order='id'):
             degrees[pair['id']] = pair['name']
     except Exception as e:
         flash(e, 'error')
@@ -92,16 +90,17 @@ def add_spending_card(card):
     sub_category = SubCategory()
     card_object = Card()
     degree_object = Degree()
+    spending_object = Spending()
 
     try:
-        spendings = get_all_spendings_card(card)
-        for pair in category.get_all_in_order(order='id'):
+        spendings = spending_object.fetch_all_spendings_from_a_card(card)
+        for pair in category.fetch_all_in_order(order='id'):
             cats[pair['id']] = pair['name']
-        for pair in sub_category.get_all_in_order(order='id'):
+        for pair in sub_category.fetch_all_in_order(order='id'):
             subs[pair['id']] = pair['name']
-        for pair in card_object.get_all_in_order(order='id'):
+        for pair in card_object.fetch_all_in_order(order='id'):
             cards[pair['id']] = pair['name']
-        for pair in degree_object.get_all_in_order(order='id'):
+        for pair in degree_object.fetch_all_in_order(order='id'):
             degrees[pair['id']] = pair['name']
     except Exception as e:
         flash(e, 'error')
@@ -115,10 +114,11 @@ def view_monthly_summary(year, month):
     sum = {}
     cat_sum = {}
     category = Category()
+    spending_object = Spending()
     try:
-        sum = get_total_spending_month(year, month)
-        cat_sum = get_category_total_spending_month(year, month)
-        for pair in category.get_all_in_order(order='id'):
+        sum = spending_object.get_total_spending_amount_of_month(year, month)
+        cat_sum = spending_object.get_each_category_total_spending_amount_of_month(year, month, include_doctor=False)
+        for pair in category.fetch_all_in_order(order='id'):
             cats[pair['id']] = pair['name']
     except Exception as e:
         flash(e, 'error')
@@ -129,9 +129,10 @@ def view_monthly_summary(year, month):
 def view_annual_summary(year):
     sum = {}
     allAmount = 0
+    spending_object = Spending()
     try:
-        sum = get_month_total_spending_year(year)
-        allAmount = get_total_spending_year(year)
+        sum = spending_object.get_total_spending_amount_of_each_month(year, include_doctor=False)
+        allAmount = spending_object.get_total_spending_of_a_year(year, include_doctor=False)
         graphJSON = interactive_annual_report(year)
         div_graph = interactive_annual_report_as_div(year)
     except Exception as e:
@@ -141,12 +142,13 @@ def view_annual_summary(year):
 
 @bp.route('/docSpending')
 def view_doc_summary():
+    doctor_spending_object = DoctorSpending()
     doc_annual_sum, doc_mon_sum = 0, 0
     doc_spending = {}
     try:
-        doc_spending = get_doctor_spendings()
-        doc_annual_sum = get_total_spending_doc()
-        doc_mon_sum = get_mon_total_spending_doc()
+        doc_spending = doctor_spending_object.fetch_doctor_spending()
+        doc_annual_sum = doctor_spending_object.get_total_amount_of_doctor_spending()
+        doc_mon_sum = doctor_spending_object.get_doctor_spending_of_each_month()
     except Exception as e:
         flash(e, 'error')
     return render_template("report/docReport.html", doc_spending=doc_spending, doc_annual_sum=doc_annual_sum,
@@ -165,17 +167,18 @@ def monthlyCatTransaction(year, month, category):
     sub_category = SubCategory()
     card_object = Card()
     degree_object = Degree()
+    spending_object = Spending()
 
     try:
-        transactions = get_spendings_month_cat(year, month, category)
-        totalSpending = get_total_spending_month_cat(year, month, category)
-        catNm = category_object.get_one_by_id(category)['name']
-        subCat = sub_category.get_all_subcategories_in_category(category)
+        transactions = spending_object.fetch_all_spending_of_category_in_month(year, month, category)
+        totalSpending = spending_object.get_total_spending_amount_of_month(year, month, category)
+        catNm = category_object.fetch_one_by_id(category)['name']
+        subCat = sub_category.fetch_all_subcategories_in_category(category)
         for pair in subCat:
             subs[pair['id']] = pair['name']
-        for pair in card_object.get_all_in_order(order='id'):
+        for pair in card_object.fetch_all_in_order(order='id'):
             cards[pair['id']] = pair['name']
-        for pair in degree_object.get_all_in_order(order='id'):
+        for pair in degree_object.fetch_all_in_order(order='id'):
             degrees[pair['id']] = pair['name']
     except Exception as e:
         flash(e, 'error')
@@ -193,17 +196,18 @@ def doctorSummary():
     sub_category = SubCategory()
     card_object = Card()
     degree_object = Degree()
+    doctor_spending_object = DoctorSpending()
 
     try:
-        transactions = get_doctor_spendings()
-        monthSummary = get_mon_total_spending_doc()
-        totalSpending = get_total_spending_doc()['sum']
-        subCat = sub_category.get_all_subcategories_in_category(16)
+        transactions = doctor_spending_object.fetch_doctor_spending()
+        monthSummary = doctor_spending_object.get_doctor_spending_of_each_month()
+        totalSpending = doctor_spending_object.get_total_amount_of_doctor_spending()
+        subCat = sub_category.fetch_all_subcategories_in_category(16)
         for pair in subCat:
             subs[pair['id']] = pair['name']
-        for pair in card_object.get_all_in_order(order='id'):
+        for pair in card_object.fetch_all_in_order(order='id'):
             cards[pair['id']] = pair['name']
-        for pair in degree_object.get_all_in_order(order='id'):
+        for pair in degree_object.fetch_all_in_order(order='id'):
             degrees[pair['id']] = pair['name']
     except Exception as e:
         flash(e, 'error')

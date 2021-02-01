@@ -1,10 +1,9 @@
-import functools
-from flask import(
+from flask import (
     Blueprint, flash, redirect, render_template, request, url_for
 )
 
-from .db_utils import Category, SubCategory, Card, Degree
 from finTrack.db import get_db
+from .db_utils import Category, SubCategory, Card, Degree
 
 bp = Blueprint('setting', __name__, url_prefix='/setting')
 
@@ -18,10 +17,10 @@ def catalog():
     degree_object = Degree()
 
     try:
-        categories = category.get_all_in_order()
-        sub_categories = sub_category.get_all_in_order()
-        cards = card_object.get_all_in_order(order='bank, name')
-        degrees = degree_object.get_all_in_order()
+        categories = category.fetch_all_in_order()
+        sub_categories = sub_category.fetch_all_in_order()
+        cards = card_object.fetch_all_in_order(order='bank, name')
+        degrees = degree_object.fetch_all_in_order()
 
         settings = {'cat': categories, 'sub': sub_categories, 'card': cards, 'degree': degrees}
     except Exception as e:
@@ -55,7 +54,7 @@ def category_add():
 def category_view(cid):
     category = Category()
     try:
-        cat = category.get_one_by_id(cid)
+        cat = category.fetch_one_by_id(cid)
         return render_template('setting/view/view_category.html', category=cat)
     except Exception as e:
         flash(e, 'error')
@@ -83,7 +82,7 @@ def category_edit(cid):
     else:
         category = Category()
         try:
-            cat = category.get_one_by_id(cid)
+            cat = category.fetch_one_by_id(cid)
             return render_template('setting/edit/edit_category.html', category=cat)
         except Exception as e:
             flash(e, 'error')
@@ -117,9 +116,9 @@ def sub_category_add(cid):
             return redirect(url_for('setting.catalog'))
     else:
         try:
-            cat = category.get_one_by_id(cid)
-            cards = card_object.get_all_in_order(order='bank, name')
-            degrees = degree_object.get_all_in_order()
+            cat = category.fetch_one_by_id(cid)
+            cards = card_object.fetch_all_in_order(order='bank, name')
+            degrees = degree_object.fetch_all_in_order()
             return render_template('setting/add_subcategory.html', category=cat, cards=cards, degrees=degrees)
         except Exception as e:
             flash(e, 'error')
@@ -141,10 +140,10 @@ def sub_category_view(sid):
         ).fetchone()
         subCat = dict(sub)
         if subCat['default_card']:
-            card = card_object.get_one_by_id(subCat['default_card'])
+            card = card_object.fetch_one_by_id(subCat['default_card'])
             subCat['default_card'] = card['name'] + ' - ' + card['bank']
         if subCat['default_degree']:
-            degree = degree_object.get_one_by_id(subCat['default_degree'])
+            degree = degree_object.fetch_one_by_id(subCat['default_degree'])
             subCat['default_degree'] = degree['name']
         return render_template('setting/view/view_subcategory.html', sub_category=subCat)
     except Exception as e:
@@ -181,10 +180,10 @@ def sub_category_edit(sid):
     else:
 
         try:
-            subCat = sub_category.get_one_by_id(sid)
-            cat = category.get_all_in_order()
-            cards = card_object.get_all_in_order(order='bank, name')
-            degrees = degree_object.get_all_in_order()
+            subCat = sub_category.fetch_one_by_id(sid)
+            cat = category.fetch_all_in_order()
+            cards = card_object.fetch_all_in_order(order='bank, name')
+            degrees = degree_object.fetch_all_in_order()
             return render_template('setting/edit/edit_subcategory.html',
                                    sub_category=subCat, category=cat, cards=cards, degrees=degrees)
         except Exception as e:
@@ -221,7 +220,7 @@ def card_add():
 def card_view(id):
     card_object = Card()
     try:
-        card = card_object.get_one_by_id(id)
+        card = card_object.fetch_one_by_id(id)
         return render_template('setting/view/view_card.html', card=card)
     except Exception as e:
         flash(e, 'error')
@@ -252,7 +251,7 @@ def card_edit(id):
             return redirect(url_for('setting.card_view', id=id))
     else:
         try:
-            card = card_object.get_one_by_id(id)
+            card = card_object.fetch_one_by_id(id)
             return render_template('setting/edit/edit_card.html', card=card)
         except Exception as e:
             flash(e, 'error')
@@ -285,7 +284,7 @@ def degree_add():
 def degree_view(id):
     degree_object = Degree()
     try:
-        degree = degree_object.get_one_by_id(id)
+        degree = degree_object.fetch_one_by_id(id)
         return render_template('setting/view/view_degree.html', degree=degree)
     except Exception as e:
         flash(e, 'error')
@@ -313,7 +312,7 @@ def degree_edit(id):
             return redirect(url_for('setting.degree_view', id=id))
     else:
         try:
-            degree = degree_object.get_one_by_id(id)
+            degree = degree_object.fetch_one_by_id(id)
             return render_template('setting/edit/edit_degree.html', degree=degree)
         except Exception as e:
             flash(e, 'error')
