@@ -1,4 +1,5 @@
 from sqlalchemy import create_engine
+import re
 
 
 def get_database_connection():
@@ -8,6 +9,9 @@ def get_database_connection():
 
 class AllSettings(object):
     __name__ = 'AllSettings'
+
+    id = int()
+    name = str()
 
     @staticmethod
     def _fetch_all_action(sql_command: str):
@@ -36,6 +40,40 @@ class AllSettings(object):
         finally:
             connection.close()
         return item
+
+    def _update_database(self, field_name_list: list, value_tuple: tuple):
+        """
+        This method will execute the UPDATE command
+        :param field_name_list: list of database fields to be updated
+        :param value_tuple: the actual values of the field. Should be the same order of filed name
+        :return:
+        """
+        connection = get_database_connection()
+        fields_to_update = ' = ?, '.join(field_name_list) + ' = ?'
+        try:
+            connection.execute(
+                f'UPDATE {self.__name__} SET {fields_to_update} WHERE id = {self.id}',
+                value_tuple
+            )
+        finally:
+            connection.close()
+
+    def _insert_into_database(self, field_name: str, value_tuple: tuple):
+        """
+        This method will insert a row into database
+        :param field_name: list of database fields
+        :param value_tuple: the actual values of the field. Should be the same order of filed name
+        :return:
+        """
+        connection = get_database_connection()
+        try:
+            connection.execute(
+                f'INSERT INTO {self.__name__} ({field_name})'
+                f' VALUES ({",".join(["?" for _ in range(len(value_tuple))])})',
+                value_tuple
+            )
+        finally:
+            connection.close()
 
     def fetch_all(self):
         sql_command = f'SELECT * FROM {self.__name__}'
@@ -67,6 +105,10 @@ class Category(AllSettings):
 class SubCategory(AllSettings):
     __name__ = 'sub_categories'
 
+    c_id = int()
+    default_card = int()
+    default_degree = int()
+
     def fetch_all_subcategories_in_category(self, category_id: int):
         """
         This method will get a list of all linked sub-categories from a category
@@ -80,6 +122,11 @@ class SubCategory(AllSettings):
 class Card(AllSettings):
     __name__ = 'cards'
 
+    bank = str()
+    cur_balance = float()
+    pay_date = int()
+    last_statement = str()
+
     def fetch_one_card_by_name(self, card_name: str):
         """
         Get one card by its name in format name - bank
@@ -87,8 +134,30 @@ class Card(AllSettings):
         :return:
         """
         card_info = card_name.split(' - ')
-        one_card_sql = f'SELECT * FROM {self.__name__} name = {card_info[0]} and bank = {card_info[1]}'
+        one_card_sql = f'SELECT * FROM {self.__name__} WHERE name = "{card_info[0]}" and bank = "{card_info[1]}"'
         return self._fetch_one_action(one_card_sql)
+
+    ################################################################################
+    # Update Card
+    ################################################################################
+
+    def update_card_balance(self):
+        """
+        This method will update a card current balance
+        :return:
+        """
+        field_name = ['cur_balance']
+        value_tuple = (self.cur_balance,)
+        self._update_database(field_name, value_tuple)
+
+    def update_card_statement_information(self):
+        """
+        This method will update a card current balance
+        :return:
+        """
+        field_name = ['last_statement', 'cur_balance']
+        value_tuple = (self.last_statement, self.cur_balance)
+        self._update_database(field_name, value_tuple)
 
 
 class Degree(AllSettings):
@@ -97,6 +166,16 @@ class Degree(AllSettings):
 
 class Spending(AllSettings):
     __name__ = 'spending'
+
+    amount = float()
+    category = int()
+    sub_category = int()
+    yr = int()
+    mon = int()
+    daynum = int()
+    card = int()
+    degree = int()
+    comments = str()
 
     ###############################################################
     # Get all section
@@ -205,6 +284,49 @@ class Spending(AllSettings):
                                     f' WHERE yr = {year}{condition}'
         yearly_total_spending_amount = self._fetch_one_action(yearly_total_spending_sql)
         return yearly_total_spending_amount['sum']
+
+    ################################################################################
+    # Add Spending
+    ################################################################################
+
+    def load_spending_values(self, request_form):
+        """
+        This method will load the spending object with values
+        :param request_form: the request object containing the values
+        :return:
+        """
+        self.name = request_form.form.get('name', 'N/A')
+        self.amount = float(request_form.form.get('amount', 0.0))
+        self.sub_category = int(request_form.form.get('sub_category', -1))
+        self.card = int(request_form.form.get('card', -1))
+        self.degree = int(request_form.form.get('degree', -1))
+        self.comments = request_form.form.get('comments', '')
+        date = request_form.form.get('date', '01/01/1960')
+
+        date_match = re.fullmatch(r"([0-9]{1,2})/([0-9]{1,2})/([0-9]{2,4})", date)
+        if date_match is None:
+            date_match = re.fullmatch(r"([0-9]{1,2})-([0-9]{1,2})-([0-9]{2,4})", date)
+        self.yr, self.mon, self.daynum = int(date_match.group(3)), int(date_match.group(1)), int(date_match.group(2))
+
+    def add_a_spending(self):
+        """
+        Add the spending object into database
+        :return:
+        """
+        field_name = 'name, amount, category, sub_category, yr, mon, daynum, card, degree, comments'
+        value_tuple = (self.name, self.amount, self.category, self.sub_category, self.yr, self.mon, self.daynum,
+                       self.card, self.degree, self.comments)
+        self._insert_into_database(field_name, value_tuple)
+
+    def update_a_spending(self):
+        """
+        Update an existing spending object in database
+        :return:
+        """
+        field_name = ['name', 'amount', 'category', 'sub_category', 'yr', 'mon', 'daynum', 'card', 'degree', 'comments']
+        value_tuple = (self.name, self.amount, self.category, self.sub_category, self.yr, self.mon, self.daynum,
+                       self.card, self.degree, self.comments)
+        self._update_database(field_name, value_tuple)
 
 
 class DoctorSpending(AllSettings):

@@ -23,7 +23,7 @@
         <tbody>
             {% for trans in transactions %}
             <tr class="form-group row">
-                <td scope="row" class="col-1"><a href="{{ url_for('spending.spending_edit', id=trans['id']) }}">{{ trans['id'] }}</a></td>
+                <td scope="row" class="col-1"><a href="{{ url_for('spending.spending_edit', spending_id=trans['id']) }}">{{ trans['id'] }}</a></td>
                 <td class="col-4">{{ trans['name'] }}</td>
                 <td class="col-1">{{ trans['amount'] }}</td>
                 <td class="col-2">{{ subs[trans['sub_category']] }}</td>

@@ -9,7 +9,7 @@ from flask import (
 )
 from werkzeug.utils import secure_filename
 
-from finTrack.db import get_db
+from finTrack.db import commit_database, rollback_database, get_db
 from .db_utils import Category, SubCategory, Card, Degree, Spending
 from .read_in_pdf_statement import read_pdf_statement_chase, read_apple_csv_transactions, read_pdf_statement_citi
 
@@ -18,135 +18,104 @@ bp = Blueprint('spending', __name__, url_prefix='/spending')
 
 @bp.route('/add', methods=('GET', 'POST'))
 def spending_add():
-    category = Category()
-    sub_category = SubCategory()
+    category_object = Category()
+    sub_category_object = SubCategory()
     card_object = Card()
     degree_object = Degree()
+    spending_object = Spending()
 
-    if request.method == 'POST':
-        name = request.form['name']
-        amount = float(request.form['amount'])
-        sub_id = request.form['sub_category']
-        cat_id = sub_category.fetch_one_by_id(sub_id)['c_id']
-        date = request.form['date']
-        card_id = request.form['card']
-        degree_id = request.form['degree']
-        comments = request.form['comments']
-        mode = request.form['mode']
-
-        year = int(date[-4:])
-        if '/' in date:
-            mbar = date.index('/')
-            month = int(date[:mbar])
-            dbar = date[mbar+1:].index('/')
-            day = int(date[mbar+1:mbar+dbar+1])
-        else:
-            mbar = date.index('-')
-            month = int(date[:mbar])
-            dbar = date[mbar + 1:].index('-')
-            day = int(date[mbar + 1:mbar + dbar + 1])
-
+    if request.method == 'GET':
         try:
-            balance = card_object.fetch_one_by_id(card_id)['cur_balance']
-            balance += amount
-
-            db = get_db()
-            db.execute(
-                'INSERT INTO spending (name, amount, category, sub_category, yr, mon, daynum, card, degree, comments)'
-                ' VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-                (name, amount, cat_id, sub_id, year, month, day, card_id, degree_id, comments)
-            )
-            db.execute(
-                'UPDATE cards SET cur_balance = ?'
-                ' WHERE id = ?',
-                (balance, card_id)
-            )
-            db.commit()
-            flash('A spending is added!', 'success')
-        except Exception as e:
-            flash(e, 'error')
-        finally:
-            if mode == 'com': # Add and Complete
-                return redirect(url_for('index.index'))
-            elif mode == 'aaa': # Add and Another
-                return redirect(url_for('spending.spending_add'))
-    else:
-        try:
-            cats = category.fetch_all_in_order()
-            subCats = sub_category.fetch_all_in_order()
+            categories = category_object.fetch_all_in_order()
+            sub_categories = sub_category_object.fetch_all_in_order()
             cards = card_object.fetch_all_in_order(order='bank, name')
             degrees = degree_object.fetch_all_in_order()
-            settings = {'cats': cats, 'subCats': subCats, 'cards': cards, 'degrees': degrees}
+            settings = {'cats': categories, 'subCats': sub_categories, 'cards': cards, 'degrees': degrees}
+
+            commit_database()
             return render_template('spending/add_spending.html', settings=settings)
         except Exception as e:
             flash(e, 'error')
+
+            rollback_database()
             return redirect(url_for('index.index'))
 
+    spending_object.load_spending_values(request)
+    spending_object.category = sub_category_object.fetch_one_by_id(spending_object.sub_category)['c_id']
+    mode = request.form.get('mode', 'com')
 
-@bp.route('/<int:card>/add', methods=('GET', 'POST'))
-def spending_add_from_card(card):
-    category = Category()
-    sub_category = SubCategory()
+    try:
+        balance = card_object.fetch_one_by_id(spending_object.card)['cur_balance']
+        balance += spending_object.amount
+        card_object.id = spending_object.card
+        card_object.cur_balance = balance
+
+        spending_object.add_a_spending()
+        card_object.update_card_balance()
+
+        commit_database()
+        flash('A spending is added!', 'success')
+    except Exception as e:
+        flash(e, 'error')
+
+        rollback_database()
+        return redirect(url_for('index.index'))
+    
+    if mode == 'com':  # Add and Complete
+        return redirect(url_for('index.index'))
+    elif mode == 'aaa':  # Add and Another
+        return redirect(url_for('spending.spending_add'))
+
+
+@bp.route('/<int:card_id>/add', methods=('GET', 'POST'))
+def spending_add_from_card(card_id):
+    category_object = Category()
+    sub_category_object = SubCategory()
     card_object = Card()
     degree_object = Degree()
+    spending_object = Spending()
 
-    if request.method == 'POST':
-        name = request.form['name']
-        amount = float(request.form['amount'])
-        sub_id = request.form['sub_category']
-        cat_id = sub_category.fetch_one_by_id(sub_id)['c_id']
-        date = request.form['date']
-        degree_id = request.form['degree']
-        comments = request.form['comments']
-        mode = request.form['mode']
-
-        year = int(date[-4:])
-        if '/' in date:
-            mbar = date.index('/')
-            month = int(date[:mbar])
-            dbar = date[mbar + 1:].index('/')
-            day = int(date[mbar + 1:mbar + dbar + 1])
-        else:
-            mbar = date.index('-')
-            month = int(date[:mbar])
-            dbar = date[mbar + 1:].index('-')
-            day = int(date[mbar + 1:mbar + dbar + 1])
-
+    if request.method == 'GET':
         try:
-            balance = card_object.fetch_one_by_id(card)['cur_balance']
-            balance += amount
-
-            db = get_db()
-            db.execute(
-                'INSERT INTO spending (name, amount, category, sub_category, yr, mon, daynum, card, degree, comments)'
-                ' VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-                (name, amount, cat_id, sub_id, year, month, day, card, degree_id, comments)
-            )
-            db.execute(
-                'UPDATE cards SET cur_balance = ?'
-                ' WHERE id = ?',
-                (balance, card)
-            )
-            db.commit()
-            flash('A spending has been added!', 'success')
-        except Exception as e:
-            flash(e, 'error')
-        finally:
-            if mode == 'com':  # Add and Complete
-                return redirect(url_for('index.index'))
-            elif mode == 'aaa':  # Add and Another
-                return redirect(url_for('spending.spending_add_from_card', card=card))
-    else:
-        try:
-            cats = category.fetch_all_in_order()
-            subCats = sub_category.fetch_all_in_order()
+            categories = category_object.fetch_all_in_order()
+            sub_categories = sub_category_object.fetch_all_in_order()
             degrees = degree_object.fetch_all_in_order()
-            card_info = card_object.fetch_one_by_id(card)
-            settings = {'cats': cats, 'subCats': subCats, 'cards': card_info, 'degrees': degrees}
+            card_info = card_object.fetch_one_by_id(card_id)
+            settings = {'cats': categories, 'subCats': sub_categories, 'card': card_info, 'degrees': degrees}
+
+            commit_database()
             return render_template('spending/add_card_spending.html', settings=settings)
         except Exception as e:
             flash(e, 'error')
+
+            rollback_database()
             return redirect(url_for('index.index'))
+
+    spending_object.load_spending_values(request)
+    spending_object.category = sub_category_object.fetch_one_by_id(spending_object.sub_category)['c_id']
+    mode = request.form.get('mode', 'com')
+
+    try:
+        balance = card_object.fetch_one_by_id(spending_object.card)['cur_balance']
+        balance += spending_object.amount
+        card_object.id = spending_object.card
+        card_object.cur_balance = balance
+
+        spending_object.add_a_spending()
+        card_object.update_card_balance()
+
+        commit_database()
+        flash('A spending has been added!', 'success')
+    except Exception as e:
+        flash(e, 'error')
+
+        rollback_database()
+        return redirect(url_for('index.index'))
+
+    if mode == 'com':  # Add and Complete
+        return redirect(url_for('index.index'))
+    elif mode == 'aaa':  # Add and Another
+        return redirect(url_for('spending.spending_add_from_card', card_id=card_id))
 
 
 @bp.route('/add/statement', methods=['POST'])
@@ -223,15 +192,15 @@ def spending_add_from_statement():
     os.remove(path_to_statement)
 
     # getting those basic information from the database
-    category = Category()
-    sub_category = SubCategory()
+    category_object = Category()
+    sub_category_object = SubCategory()
     degree_object = Degree()
 
-    cats = category.fetch_all_in_order()
-    subCats = sub_category.fetch_all_in_order()
-    degrees = degree_object.fetch_all_in_order()
-    settings = {'cats': cats, 'subCats': subCats, 'degrees': degrees}
-    subcat_degree_map = {sub_category['id']: sub_category['default_degree'] for sub_category in subCats}
+    categories = category_object.fetch_all_in_order()
+    sub_categories = sub_category_object.fetch_all_in_order()
+    degrees = degree_object.fetch_all_in_order(order='id')
+    settings = {'cats': categories, 'subCats': sub_categories, 'degrees': degrees}
+    subcat_degree_map = {sub_category['id']: sub_category['default_degree'] for sub_category in sub_categories}
 
     # Then pass the pdf contents, preset configuration and basic information into the template
     return render_template('spending/add_spending_from_statement.html',
@@ -255,55 +224,56 @@ def save_statement_data():
     # get the preset from form, which is in json format, and converted into dictionary using ast.literal_eval()
     preset = ast.literal_eval(request.form.get('preset', ''))
 
-    # Get a hold of a database entry
-    db = get_db()
-
     try:
         # loop through all the transactions
         for index in range(transaction_counts):
             # if this transaction is not excluded, then save the transaction into database
             if request.form.get(f'exclude{index + 1}', 'False') == 'False':
+                spending = Spending()
                 # Compose each single transaction's detail by getting those information by the index
-                single_trans = {
-                    'name': request.form.get(f'name{index + 1}', 'N/A'),
-                    'category': request.form.get(f'category{index + 1}', -1),
-                    'amount': request.form.get(f'amount{index + 1}', 0),
-                    'date': request.form.get(f'date{index + 1}', '01/01/0101'),
-                    'degree': request.form.get(f'degree{index + 1}', -1),
-                    'note': request.form.get(f'note{index + 1}', ''),
-                }
+
+                spending.name = request.form.get(f'name{index + 1}', 'N/A')
+                spending.sub_category = request.form.get(f'category{index + 1}', -1)
+                spending.amount = request.form.get(f'amount{index + 1}', 0)
+                spending.card = card.id
+                spending.degree = request.form.get(f'degree{index + 1}', -1)
+                spending.comments = request.form.get(f'note{index + 1}', '')
+                date = request.form.get(f'date{index + 1}', '01/01/1960')
+
                 # get the sub_category object from database using the sub_category_id
-                sub_category = sub_category_object.fetch_one_by_id(single_trans['category'])
+                spending.category = sub_category_object.fetch_one_by_id(spending.sub_category)['c_id']
                 # match the date information from transaction using regular expression
                 # by doing so, I can get the year, month and day using the position of the date_match
-                date_match = re.fullmatch(r"([0-9]{2})/([0-9]{2})/([0-9]{4})", single_trans['date'])
+                date_match = re.fullmatch(r"([0-9]{1,2})/([0-9]{1,2})/([0-9]{2,4})", date)
+                spending.yr = int(date_match.group(3))
+                spending.mon = int(date_match.group(1))
+                spending.daynum = int(date_match.group(2))
 
-                # insert the single transaction into the database
-                db.execute(
-                    'INSERT INTO spending (name, amount, category, sub_category, yr, mon, daynum, card, degree, comments)'
-                    ' VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-                    (single_trans['name'], single_trans['amount'], sub_category['c_id'], single_trans['category'],
-                     date_match.group(3), date_match.group(1), date_match.group(2), card['id'], single_trans['degree'],
-                     single_trans['note'])
-                )
+                spending.add_a_spending()
+
                 # increase the valid transaction number
                 valid_transactions += 1
-                total_amount += float(single_trans['amount'])
+                total_amount += float(spending.amount)
                 # if the transaction is not already in the preset,
                 # then save the transaction into the preset dictionary.
-                if single_trans['name'] not in preset:
-                    preset[single_trans['name']] = {'name': single_trans['name'],
-                                                    'category': single_trans['category'],
-                                                    'degree': single_trans['degree']}
+                if spending.name not in preset:
+                    preset[spending.name] = {'name': spending.name,
+                                             'category': spending.sub_category,
+                                             'degree': spending.degree}
 
+        card_object.id = card.id
+        card_object.cur_balance = total_amount
+        card_object.last_statement = statement_name
+
+        card_object.update_card_statement_information()
         # Update card information
-        db.execute(
-            'UPDATE cards SET last_statement = ?, cur_balance = ?'
-            ' WHERE id = ?',
-            (statement_name, total_amount, card['id'])
-        )
+        # db.execute(
+        #     'UPDATE cards SET last_statement = ?, cur_balance = ?'
+        #     ' WHERE id = ?',
+        #     (statement_name, total_amount, card['id'])
+        # )
         # Then commit the database after all transactions are saved
-        db.commit()
+        commit_database()
 
         # save the preset back to the preset file, if the preset is not empty
         if preset:
@@ -347,71 +317,56 @@ def save_statement_data():
     # If any exception raised, flash the error message and rollback the database and return to the index page.
     except TypeError as e:
         flash(e, 'error')
-        db.rollback()
+
+        rollback_database()
         return redirect(url_for('index.index'))
 
 
-@bp.route('/<int:id>/eidt/', methods=('GET', 'POST'))
-def spending_edit(id):
-    category = Category()
-    sub_category = SubCategory()
+@bp.route('/<int:spending_id>/eidt/', methods=('GET', 'POST'))
+def spending_edit(spending_id):
+    category_object = Category()
+    sub_category_object = SubCategory()
     card_object = Card()
     degree_object = Degree()
     spending_object = Spending()
+    spending_object.id = spending_id
 
-    if request.method == 'POST':
-        name = request.form['name']
-        amount = float(request.form['amount'])
-        sub_id = request.form['sub_category']
-        cat_id = sub_category.fetch_one_by_id(sub_id)['c_id']
-        date = request.form['date']
-        card_id = request.form['card']
-        degree_id = request.form['degree']
-        comments = request.form['comments']
-
-        year = int(date[-4:])
-        if '/' in date:
-            mbar = date.index('/')
-            month = int(date[:mbar])
-            dbar = date[mbar + 1:].index('/')
-            day = int(date[mbar + 1:mbar + dbar + 1])
-        else:
-            mbar = date.index('-')
-            month = int(date[:mbar])
-            dbar = date[mbar + 1:].index('-')
-            day = int(date[mbar + 1:mbar + dbar + 1])
-
+    if request.method == 'GET':
         try:
-            balance = card_object.fetch_one_by_id(card_id)['cur_balance']
-            balance += amount
-
-            db = get_db()
-            db.execute(
-                'UPDATE spending SET name=?, amount=?, category=?, sub_category=?, yr=?, mon=?, daynum=?, card=?, degree=?, comments=?'
-                ' WHERE id=?',
-                (name, amount, cat_id, sub_id, year, month, day, card_id, degree_id, comments, id)
-            )
-            db.execute(
-                'UPDATE cards SET cur_balance = ?'
-                ' WHERE id = ?',
-                (balance, card_id)
-            )
-            db.commit()
-            flash('Spending has been updated!', 'success')
-        except Exception as e:
-            flash(e, 'error')
-        finally:
-            return redirect(url_for('report.view_all_spending'))
-    else:
-        try:
-            cats = category.fetch_all_in_order()
-            subCats = sub_category.fetch_all_in_order()
+            categories = category_object.fetch_all_in_order()
+            sub_categories = sub_category_object.fetch_all_in_order()
             cards = card_object.fetch_all_in_order(order='bank, name')
             degrees = degree_object.fetch_all_in_order()
-            spending = spending_object.fetch_one_by_id(id)
-            date = str(spending['mon'])+'/'+str(spending['daynum'])+'/'+str(spending['yr'])
-            settings = {'cats': cats, 'subCats': subCats, 'cards': cards, 'degrees': degrees}
+            spending = spending_object.fetch_one_by_id(spending_id)
+            date = '/'.join([str(spending['mon']), str(spending['daynum']), str(spending['yr'])])
+            settings = {'cats': categories, 'subCats': sub_categories, 'cards': cards, 'degrees': degrees}
+
+            commit_database()
             return render_template('spending/edit_spending.html', settings=settings, spending=spending, date=date)
         except Exception as e:
             flash(e, 'error')
+
+            rollback_database()
             return redirect(url_for('report.view_all_spending'))
+
+    spending_object.load_spending_values(request)
+    spending_object.category = sub_category_object.fetch_one_by_id(spending_object.sub_category)['c_id']
+
+    try:
+        balance = card_object.fetch_one_by_id(spending_object.card)['cur_balance']
+        balance += spending_object.amount
+        card_object.id = spending_object.card
+        card_object.cur_balance = balance
+
+        spending_object.update_a_spending()
+        card_object.update_card_balance()
+
+        commit_database()
+        flash('Spending has been updated!', 'success')
+    except Exception as e:
+        flash(e, 'error')
+
+        rollback_database()
+    finally:
+        return redirect(url_for('report.view_all_spending'))
+
