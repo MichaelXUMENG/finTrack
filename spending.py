@@ -9,7 +9,7 @@ from flask import (
 )
 from werkzeug.utils import secure_filename
 
-from finTrack.db import commit_database, rollback_database, get_db
+from finTrack.db import commit_database, rollback_database
 from .db_utils import Category, SubCategory, Card, Degree, Spending
 from .read_in_pdf_statement import read_pdf_statement_chase, read_apple_csv_transactions, read_pdf_statement_citi
 
