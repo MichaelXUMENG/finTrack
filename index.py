@@ -15,6 +15,6 @@ def index():
     except Exception as e:
         flash(e, 'error')
         cards = []
-    
+
     commit_database()
     return render_template('index.html', cards=cards)

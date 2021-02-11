@@ -29,7 +29,7 @@ def spending_add():
             categories = category_object.fetch_all_in_order()
             sub_categories = sub_category_object.fetch_all_in_order()
             cards = card_object.fetch_all_in_order(order='bank, name')
-            degrees = degree_object.fetch_all_in_order()
+            degrees = degree_object.fetch_all_in_order(order='id')
             settings = {'cats': categories, 'subCats': sub_categories, 'cards': cards, 'degrees': degrees}
 
             commit_database()
@@ -79,7 +79,7 @@ def spending_add_from_card(card_id):
         try:
             categories = category_object.fetch_all_in_order()
             sub_categories = sub_category_object.fetch_all_in_order()
-            degrees = degree_object.fetch_all_in_order()
+            degrees = degree_object.fetch_all_in_order(order='id')
             card_info = card_object.fetch_one_by_id(card_id)
             settings = {'cats': categories, 'subCats': sub_categories, 'card': card_info, 'degrees': degrees}
 
@@ -202,6 +202,8 @@ def spending_add_from_statement():
     settings = {'cats': categories, 'subCats': sub_categories, 'degrees': degrees}
     subcat_degree_map = {sub_category['id']: sub_category['default_degree'] for sub_category in sub_categories}
 
+    commit_database()
+
     # Then pass the pdf contents, preset configuration and basic information into the template
     return render_template('spending/add_spending_from_statement.html',
                            card=card, inputs=inputs, settings=settings, preset=preset, filename=filename,
@@ -273,7 +275,6 @@ def save_statement_data():
         #     (statement_name, total_amount, card['id'])
         # )
         # Then commit the database after all transactions are saved
-        commit_database()
 
         # save the preset back to the preset file, if the preset is not empty
         if preset:
@@ -313,6 +314,8 @@ def save_statement_data():
         # Flash the successful message to the screen
         flash(f'{valid_transactions} spendings are added!', 'success')
         # and return to the report page of that card
+
+        commit_database()
         return redirect(url_for('report.add_spending_card', card=card['id']))
     # If any exception raised, flash the error message and rollback the database and return to the index page.
     except TypeError as e:

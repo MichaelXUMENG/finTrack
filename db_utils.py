@@ -101,6 +101,24 @@ class AllSettings(object):
 class Category(AllSettings):
     __name__ = 'categories'
 
+    def add_a_category(self):
+        """
+        This method inserts a new category into database
+        :return:
+        """
+        field_name = 'name'
+        value_tuple = (self.name,)
+        self._insert_into_database(field_name, value_tuple)
+
+    def update_category(self):
+        """
+        This method updates an existing category name
+        :return:
+        """
+        field_name = ['name']
+        value_tuple = (self.name,)
+        self._update_database(field_name, value_tuple)
+
 
 class SubCategory(AllSettings):
     __name__ = 'sub_categories'
@@ -117,6 +135,39 @@ class SubCategory(AllSettings):
         """
         all_sub_categories_from_cat_sql = f'SELECT * FROM {self.__name__} WHERE c_id = {category_id} ORDER BY id'
         return self._fetch_all_action(all_sub_categories_from_cat_sql)
+
+    ################################################################################
+    # Add sub-category
+    ################################################################################
+
+    def load_a_sub_category(self, request_form):
+        """
+        This method will load the sub-category with data from the form
+        :param request_form: the request form from website
+        :return:
+        """
+        self.name = request_form.get('name', '')
+        self.c_id = request_form.get('c_id', -1)
+        self.default_card = request_form.get('default_card', None)
+        self.default_degree = request_form.get('default_degree', None)
+
+    def add_a_sub_category(self):
+        """
+        This method inserts a new sub-category into database
+        :return:
+        """
+        field_name = "name, c_id, default_card, default_degree"
+        value_tuple = (self.name, self.c_id, self.default_card, self.default_degree)
+        self._insert_into_database(field_name, value_tuple)
+
+    def update_sub_category(self):
+        """
+        This method updates a sub-category entry
+        :return:
+        """
+        field_name = ['name', 'c_id', 'default_card', 'default_degree']
+        value_tuple = (self.name, self.c_id, self.default_card, self.default_degree)
+        self._update_database(field_name, value_tuple)
 
 
 class Card(AllSettings):
@@ -137,9 +188,49 @@ class Card(AllSettings):
         one_card_sql = f'SELECT * FROM {self.__name__} WHERE name = "{card_info[0]}" and bank = "{card_info[1]}"'
         return self._fetch_one_action(one_card_sql)
 
+    def get_a_card_name(self, card_id: int):
+        """
+        This method will return the card name as 'bank - name' by a given id
+        :param card_id: card id
+        :return:
+        """
+        if not card_id:
+            return ''
+        card = self.fetch_one_by_id(card_id)
+        return ' - '.join([card['name'], card['bank']])
+
     ################################################################################
     # Update Card
     ################################################################################
+
+    def load_a_card(self, request_form):
+        """
+        This method loads information of a card
+        :param request_form: the request form which contains the information
+        :return:
+        """
+        self.name = request_form.get('name', '')
+        self.bank = request_form.get('bank', '')
+        self.pay_date = int(request_form.get('pay_day', 0))
+        self.cur_balance = int(request_form.get('balance', 0))
+
+    def add_a_new_card(self):
+        """
+        This method will insert a card into database
+        :return:
+        """
+        field_name = "name, bank, cur_balance, pay_date"
+        value_tuple = (self.name, self.bank, self.cur_balance, self.pay_date)
+        self._insert_into_database(field_name, value_tuple)
+
+    def update_card_information(self):
+        """
+        This method will update information of a card
+        :return:
+        """
+        field_name = ['name', 'bank', 'cur_balance', 'pay_date']
+        value_tuple = (self.name, self.bank, self.cur_balance, self.pay_date)
+        self._update_database(field_name, value_tuple)
 
     def update_card_balance(self):
         """
@@ -162,6 +253,39 @@ class Card(AllSettings):
 
 class Degree(AllSettings):
     __name__ = 'degrees'
+
+    def get_a_degree_name(self, degree_id: int):
+        """
+        This method will return the degree's name by a given id
+        :param degree_id: degree id
+        :return:
+        """
+        if not degree_id:
+            return ''
+        degree = self.fetch_one_by_id(degree_id)
+        return degree['name']
+
+    ################################################################################
+    # Update Card
+    ################################################################################
+
+    def add_a_degree(self):
+        """
+        This method inserts a new degree into database
+        :return:
+        """
+        field_name = 'name'
+        value_tuple = (self.name,)
+        self._insert_into_database(field_name, value_tuple)
+
+    def update_degree(self):
+        """
+        This method updates information of a degree
+        :return:
+        """
+        field_name = ['name']
+        value_tuple = (self.name,)
+        self._update_database(field_name, value_tuple)
 
 
 class Spending(AllSettings):
