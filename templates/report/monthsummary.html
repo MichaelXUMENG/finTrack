@@ -21,7 +21,7 @@
                     <tr>
                         <td>{{ cats[cat['category']] }}</td>
                         <td>
-                            <a href="{{ url_for('report.monthlyCatTransaction', year=year, month=month, category=cat['category'] ) }}">
+                            <a href="{{ url_for('report.monthlyCatTransaction', year=year, month=month, category_id=cat['category'] ) }}">
                                 {{ cat['sum'] }}
                             </a>
                         </td>

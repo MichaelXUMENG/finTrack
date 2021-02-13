@@ -316,7 +316,7 @@ def save_statement_data():
         # and return to the report page of that card
 
         commit_database()
-        return redirect(url_for('report.add_spending_card', card=card['id']))
+        return redirect(url_for('report.add_spending_card', card_id=card['id']))
     # If any exception raised, flash the error message and rollback the database and return to the index page.
     except TypeError as e:
         flash(e, 'error')

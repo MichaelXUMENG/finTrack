@@ -12,7 +12,7 @@
             {% for card in cards %}
             <div class="item itemcard">
                 <h4>{{ card['name'] }}</h4>
-                <a href="{{ url_for('report.view_all_spending_card', card=card['id']) }}">
+                <a href="{{ url_for('report.view_all_spending_card', card_id=card['id']) }}">
                     <img src="{{ url_for('static', filename='images/report/'+card['name']+'.jpeg') }}" alt="no-image" />
                 </a>
             </div>

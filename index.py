@@ -9,9 +9,8 @@ bp = Blueprint('index', __name__)
 
 @bp.route('/')
 def index():
-    card_object = Card()
     try:
-        cards = card_object.fetch_all_in_order(order='bank, name')
+        cards = Card().fetch_all_in_order(order='bank, name')
     except Exception as e:
         flash(e, 'error')
         cards = []
