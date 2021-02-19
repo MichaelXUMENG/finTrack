@@ -1,10 +1,11 @@
 import io
+
 import pandas as pd
-from sqlalchemy import create_engine
-import matplotlib.pyplot as plt
+from flask import Blueprint, Response
 from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
 from matplotlib.figure import Figure
-from flask import Blueprint, Response
+
+from .db_utils import Spending, Category
 
 bp = Blueprint('graph', __name__, url_prefix='/graph')
 months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
@@ -12,21 +13,11 @@ months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 
 
 @bp.route('/<int:year>/annualReport.png')
 def annualReport(year):
-    engine = create_engine("sqlite:///instance/finTrack.sqlite")
-    con = engine.connect()
-    monthly = con.execute('SELECT SUM(amount) as summary, mon' +
-                          ' FROM spending' +
-                          ' WHERE yr=? and category!=?' +
-                          ' GROUP BY mon ORDER BY mon',
-                          (year, 16,)
-                          )
-    df_monthly = pd.DataFrame(monthly.fetchall())
-    df_monthly.columns = monthly.keys()
-    count = len(df_monthly['summary'])
+    df_monthly = pd.DataFrame(Spending().get_total_spending_amount_of_each_month(year=year, include_doctor=False))
+    df_monthly.columns = ['sum', 'mon']
     month_spendings = [0]*12
-    for month_index in range(count):
-        month_spendings[df_monthly['mon'][month_index]-1] = df_monthly['summary'][month_index]
-    con.close()
+    for month_index in range(len(df_monthly['sum'])):
+        month_spendings[df_monthly['mon'][month_index]-1] = df_monthly['sum'][month_index]
 
     title = f'Totle Spending of each Month in {year}'
     ylabel = "Dolors"
@@ -42,22 +33,15 @@ def annualReport(year):
 
 @bp.route('/<int:year>/<int:month>/monthReport.png')
 def monthReport(year, month):
-    month_translate ={
+    month_translate = {
         1: 'January', 2: 'February', 3: 'March', 4: 'April',
         5: 'May', 6: 'June', 7: 'July', 8: 'August',
         9: 'September', 10: 'October', 11: 'November', 12: 'December',
     }
-    engine = create_engine("sqlite:///instance/finTrack.sqlite")
-    con = engine.connect()
-    summary = con.execute('SELECT SUM(amount) as summary, c.name' +
-                          ' FROM spending LEFT JOIN categories AS c on category = c.id' +
-                          ' WHERE yr=? and mon=? and category!=?' +
-                          ' GROUP BY category ORDER BY SUM(amount) DESC',
-                          (year, month, 16,)
-                          )
-    df_summary = pd.DataFrame(summary.fetchall())
-    df_summary.columns = summary.keys()
-    con.close()
+    monthly_summary = Spending().get_each_category_total_spending_amount_of_month(year, month, include_doctor=False,
+                                                                                  category_name=True)
+    df_monthly_summary = pd.DataFrame(monthly_summary)
+    df_monthly_summary.columns = ['sum', 'name']
 
     title = f'{year} {month_translate[month]} Monthly Summary'
     colors = ['#ff9999', '#66b3ff', '#99ff99', '#ffcc99', '#ffc4d8', '#9bf6ff', '#ffe39e', '#ffd3b8', '#e9fba6',
@@ -79,9 +63,9 @@ def monthReport(year, month):
     plt.tight_layout()
     plt.show()
     """
-    explode = [0.1] * len(df_summary.index)
-    axis.pie(df_summary['summary'], colors=colors, labels=df_summary['name'],
-            autopct='%1.1f%%', startangle=180, explode=explode, radius=1)
+    explode = [0.1] * len(df_monthly_summary.index)
+    axis.pie(df_monthly_summary['sum'], colors=colors, labels=df_monthly_summary['name'],
+             autopct='%1.1f%%', startangle=180, explode=explode, radius=1)
     output = io.BytesIO()
     FigureCanvas(fig).print_png(output)
     return Response(output.getvalue(), mimetype='image/png')
@@ -89,39 +73,29 @@ def monthReport(year, month):
 
 @bp.route('/<int:year>/utilityReport.png')
 def utilityReport(year):
-    engine = create_engine("sqlite:///instance/finTrack.sqlite")
-    con = engine.connect()
+    utility_category_id = Category().get_category_id_by_name('Utility')
     # Select each utility category's total amount of each month
-    utility = con.execute('SELECT SUM(amount) as summary, s.name, mon' +
-                          ' FROM spending LEFT JOIN sub_categories AS s on sub_category=s.id' +
-                          ' WHERE yr=? and category=3'
-                          ' GROUP BY sub_category, mon ORDER BY mon',
-                          (year,)
-                          )
-    df_utility = pd.DataFrame(utility.fetchall())
-    df_utility.columns = utility.keys()
+    df_utility_for_bar = pd.DataFrame(
+        Spending().get_sub_category_monthly_spending_of_a_category(year, [utility_category_id])
+    )
+    df_utility_for_bar.columns = ['sum', 'name', 'mon']
 
     # Select the total amount of utility of each month
-    utility_total = con.execute('SELECT SUM(amount) as summary, mon' +
-                                ' FROM spending' +
-                                ' WHERE yr=? and category=3'
-                                ' GROUP BY mon ORDER BY mon',
-                                (year,)
-                                )
-    df_utility_total = pd.DataFrame(utility_total.fetchall())
-    df_utility_total.columns = utility_total.keys()
-    con.close()
+    df_utility_for_line = pd.DataFrame(
+        Spending().get_specific_category_monthly_spending(year, [utility_category_id])
+    )
+    df_utility_for_line.columns = ['sum', 'mon']
 
     total_utility = [0] * 12
-    for index in range(len(df_utility_total)):
-        total_utility[df_utility_total['mon'][index]-1] = df_utility_total['summary'][index]
+    for index in range(len(df_utility_for_line)):
+        total_utility[df_utility_for_line['mon'][index]-1] = df_utility_for_line['sum'][index]
 
     # save the each utility category into its own variable
-    df_water = df_utility[df_utility['name'] == 'Water and Waste']
-    df_electricity = df_utility[df_utility['name'] == 'Electricity']
-    df_internet = df_utility[df_utility['name'] == 'Internet']
-    df_gas = df_utility[df_utility['name'] == 'Nature Gas']
-    df_mobile = df_utility[df_utility['name'] == 'Mobile Bill']
+    df_water = df_utility_for_bar[df_utility_for_bar['name'] == 'Water and Waste']
+    df_electricity = df_utility_for_bar[df_utility_for_bar['name'] == 'Electricity']
+    df_internet = df_utility_for_bar[df_utility_for_bar['name'] == 'Internet']
+    df_gas = df_utility_for_bar[df_utility_for_bar['name'] == 'Nature Gas']
+    df_mobile = df_utility_for_bar[df_utility_for_bar['name'] == 'Mobile Bill']
 
     # Save the previous amount of each utility category; will be used in the stack column
     water_bar = [0] * 12
@@ -131,22 +105,22 @@ def utilityReport(year):
     mobile_bar = [0] * 12
 
     for index in range(len(df_water)):
-        water_bar[df_water['mon'].tolist()[index]-1] = df_water['summary'].tolist()[index]
+        water_bar[df_water['mon'].tolist()[index]-1] = df_water['sum'].tolist()[index]
     electrisity_base = water_bar[:]
     internet_base = electrisity_base[:]
     for index in range(len(df_electricity)):
-        electrisity_bar[df_electricity['mon'].tolist()[index]-1] = df_electricity['summary'].tolist()[index]
-        internet_base[df_electricity['mon'].tolist()[index] - 1] += df_electricity['summary'].tolist()[index]
+        electrisity_bar[df_electricity['mon'].tolist()[index]-1] = df_electricity['sum'].tolist()[index]
+        internet_base[df_electricity['mon'].tolist()[index] - 1] += df_electricity['sum'].tolist()[index]
     gas_base = internet_base[:]
     for index in range(len(df_internet)):
-        internet_bar[df_internet['mon'].tolist()[index]-1] = df_internet['summary'].tolist()[index]
-        gas_base[df_internet['mon'].tolist()[index] - 1] += df_internet['summary'].tolist()[index]
+        internet_bar[df_internet['mon'].tolist()[index]-1] = df_internet['sum'].tolist()[index]
+        gas_base[df_internet['mon'].tolist()[index] - 1] += df_internet['sum'].tolist()[index]
     mobile_base = gas_base[:]
     for index in range(len(df_gas)):
-        gas_bar[df_gas['mon'].tolist()[index]-1] += df_gas['summary'].tolist()[index]
-        mobile_base[df_gas['mon'].tolist()[index] - 1] += df_gas['summary'].tolist()[index]
+        gas_bar[df_gas['mon'].tolist()[index]-1] += df_gas['sum'].tolist()[index]
+        mobile_base[df_gas['mon'].tolist()[index] - 1] += df_gas['sum'].tolist()[index]
     for index in range(len(df_mobile)):
-        mobile_bar[df_mobile['mon'].tolist()[index]-1] += df_mobile['summary'].tolist()[index]
+        mobile_bar[df_mobile['mon'].tolist()[index]-1] += df_mobile['sum'].tolist()[index]
 
     title="The report of Utility"
     # Add y axis lable and the title
@@ -166,7 +140,7 @@ def utilityReport(year):
 
     # add the color mapping
     axis.legend((pw[0], pe[0], pi[0], pg[0], pm[0]),
-               ('Water and Waste', 'Electricity', 'Internet', 'Natral Gas', 'Mobile Bill'))
+                ('Water and Waste', 'Electricity', 'Internet', 'Natral Gas', 'Mobile Bill'))
 
     # show the plot
     output = io.BytesIO()
@@ -176,43 +150,33 @@ def utilityReport(year):
 
 @bp.route('/<int:year>/eatingReport.png')
 def eatingReport(year):
-    engine = create_engine("sqlite:///instance/finTrack.sqlite")
-    con = engine.connect()
+    category_list = [Category().get_category_id_by_name('Food'), Category().get_category_id_by_name('Grocery')]
     # Select Food and Grocery total amount of each month
-    food = con.execute('SELECT SUM(amount) as summary, c.name, mon' +
-                       ' FROM spending LEFT JOIN categories AS c on category=c.id' +
-                       ' WHERE yr=? and (category=2 or category=6)'
-                       ' GROUP BY category, mon ORDER BY mon',
-                       (year,)
-                       )
-    df_food = pd.DataFrame(food.fetchall())
-    df_food.columns = food.keys()
+    df_food_for_bar = pd.DataFrame(
+        Spending().get_categories_monthly_spending_with_category_name(year, category_list)
+    )
+    df_food_for_bar.columns = ['sum', 'name', 'mon']
 
     # Select the total amount of both Food and Grocery of each month
-    food_total = con.execute('SELECT SUM(amount) as summary, mon' +
-                             ' FROM spending' +
-                             ' WHERE yr=? and (category=2 or category=6)'
-                             ' GROUP BY mon ORDER BY mon',
-                             (year,)
-                             )
-    df_food_total = pd.DataFrame(food_total.fetchall())
-    df_food_total.columns = food_total.keys()
-    con.close()
+    df_food_for_line = pd.DataFrame(
+        Spending().get_specific_category_monthly_spending(year, category_list)
+    )
+    df_food_for_line.columns = ['sum', 'mon']
 
     total_food = [0] * 12
-    for index in range(len(df_food_total)):
-        total_food[df_food_total['mon'][index]-1] = df_food_total['summary'][index]
+    for index in range(len(df_food_for_line)):
+        total_food[df_food_for_line['mon'][index]-1] = df_food_for_line['sum'][index]
 
     # save the Food and Grocery into its own variable
-    df_grocery = df_food[df_food['name'] == 'Grocery']
-    df_food = df_food[df_food['name'] == 'Food']
+    df_grocery = df_food_for_bar[df_food_for_bar['name'] == 'Grocery']
+    df_food_for_bar = df_food_for_bar[df_food_for_bar['name'] == 'Food']
 
     food_bar = [0] * 12
     grocery_bar = [0] * 12
     for index in range(len(df_grocery)):
-        grocery_bar[df_grocery['mon'].tolist()[index]-1] = df_grocery['summary'].tolist()[index]
-    for index in range(len(df_food)):
-        food_bar[df_food['mon'].tolist()[index]-1] = df_food['summary'].tolist()[index]
+        grocery_bar[df_grocery['mon'].tolist()[index]-1] = df_grocery['sum'].tolist()[index]
+    for index in range(len(df_food_for_bar)):
+        food_bar[df_food_for_bar['mon'].tolist()[index]-1] = df_food_for_bar['sum'].tolist()[index]
 
     title = f'Total Spending of Food and Grocery in {year}'
     ylabel = "Dolors"
@@ -236,24 +200,17 @@ def eatingReport(year):
 
 @bp.route('/<int:year>/groceryReport.png')
 def groceryReport(year):
-    engine = create_engine("sqlite:///instance/finTrack.sqlite")
-    con = engine.connect()
-    # Select Food and Grocery total amount of each month
-    food = con.execute('SELECT SUM(amount) as summary, c.name, mon' +
-                       ' FROM spending LEFT JOIN categories AS c on category=c.id' +
-                       ' WHERE yr=? and (category=2 or category=6)'
-                       ' GROUP BY category, mon ORDER BY mon',
-                       (year,)
-                       )
-    df_food = pd.DataFrame(food.fetchall())
-    df_food.columns = food.keys()
-    con.close()
+    grocery_category_id = Category().get_category_id_by_name('Grocery')
+    # Select Grocery total amount of each month
+    df_grocery = pd.DataFrame(
+        Spending().get_specific_category_monthly_spending(year, [grocery_category_id])
+    )
+    df_grocery.columns = ['sum', 'mon']
 
     # save the Food and Grocery into its own variable
-    df_grocery = df_food[df_food['name'] == 'Grocery']
     grocery_bar = [0] * 12
     for index in range(len(df_grocery)):
-        grocery_bar[df_grocery['mon'].tolist()[index] - 1] = df_grocery['summary'].tolist()[index]
+        grocery_bar[df_grocery['mon'].tolist()[index] - 1] = df_grocery['sum'].tolist()[index]
 
     # Plot for Grocery Only
     fig = Figure()
@@ -272,24 +229,17 @@ def groceryReport(year):
 
 @bp.route('/<int:year>/foodReport.png')
 def foodReport(year):
-    engine = create_engine("sqlite:///instance/finTrack.sqlite")
-    con = engine.connect()
-    # Select Food and Grocery total amount of each month
-    food = con.execute('SELECT SUM(amount) as summary, c.name, mon' +
-                       ' FROM spending LEFT JOIN categories AS c on category=c.id' +
-                       ' WHERE yr=? and (category=2 or category=6)'
-                       ' GROUP BY category, mon ORDER BY mon',
-                       (year,)
-                       )
-    df_food = pd.DataFrame(food.fetchall())
-    df_food.columns = food.keys()
-    con.close()
+    food_category_id = Category().get_category_id_by_name('Food')
+    # Select Food total amount of each month
+    df_food = pd.DataFrame(
+        Spending().get_specific_category_monthly_spending(year, [food_category_id])
+    )
+    df_food.columns = ['sum', 'mon']
 
     # save the Food and Grocery into its own variable
-    df_food = df_food[df_food['name'] == 'Food']
     food_bar = [0] * 12
     for index in range(len(df_food)):
-        food_bar[df_food['mon'].tolist()[index]-1] = df_food['summary'].tolist()[index]
+        food_bar[df_food['mon'].tolist()[index]-1] = df_food['sum'].tolist()[index]
 
     # Plot for Grocery Only
     fig = Figure()

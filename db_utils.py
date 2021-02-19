@@ -101,6 +101,16 @@ class AllSettings(object):
 class Category(AllSettings):
     __name__ = 'categories'
 
+    def get_category_id_by_name(self, category_name: str):
+        """
+        Get the category id given the category name
+        :param category_name: category name in string
+        :return:
+        """
+        one_category_sql = f'SELECT id FROM {self.__name__} WHERE name = "{category_name}"'
+        category = self._fetch_one_action(one_category_sql)
+        return category['id']
+
     def add_a_category(self):
         """
         This method inserts a new category into database
@@ -368,20 +378,74 @@ class Spending(AllSettings):
         total_spending_amount = self._fetch_one_action(total_spending_amount_sql)
         return total_spending_amount['sum']
 
-    def get_each_category_total_spending_amount_of_month(self, year: int, month: int, include_doctor: bool = True):
+    def get_each_category_total_spending_amount_of_month(self, year: int, month: int, include_doctor: bool = True,
+                                                         category_name: bool = False):
         """
         This method get total spending of each category of a month, and return them all as a list. If the include_doctor
         indicator set to False, then the list will exclude doctor category (16)
         :param year: year in int
         :param month: month in int
         :param include_doctor: whether to include doctor category. Default set to True
+        :param category_name: whether to query category name, if set to False, then query category id instead
         :return:
         """
         condition = '' if include_doctor else ' and category != 16'
-        each_month_spending_amount_sql = f'SELECT category, ROUND(SUM(amount), 2) as sum FROM {self.__name__}' \
+        if category_name:
+            category_info = 'c.name'
+            join_clause = ' LEFT JOIN categories AS c on category = c.id'
+        else:
+            category_info = 'category'
+            join_clause = ''
+        each_month_spending_amount_sql = f'SELECT ROUND(SUM(amount), 2) as sum, {category_info}' \
+                                         f' FROM {self.__name__}{join_clause}' \
                                          f' WHERE yr = {year} and mon = {month}{condition}' \
                                          f' GROUP BY category ORDER BY SUM(amount) DESC'
         return self._fetch_all_action(each_month_spending_amount_sql)
+
+    def get_specific_category_monthly_spending(self, year: int, category_ids: list):
+        """
+        This method will query the monthly amount of spending given a category id list
+        :param year: year in int
+        :param category_ids: list of id of the category to be queried
+        :return:
+        """
+        condition_list = [f'category={c_id}' for c_id in category_ids]
+        condition = ' or '.join(condition_list)
+        category_monthly_summary_sql = f'SELECT ROUND(SUM(amount), 2) as sum, mon' \
+                                       f' FROM {self.__name__}' \
+                                       f' WHERE yr={year} and ({condition})' \
+                                       f' GROUP BY mon ORDER BY mon'
+        return self._fetch_all_action(category_monthly_summary_sql)
+
+    def get_categories_monthly_spending_with_category_name(self, year: int, category_ids: list):
+        """
+        This method will query the monthly amount of spending given a category id list
+        :param year: year in int
+        :param category_ids: list of id of the category to be queried
+        :return:
+        """
+        condition_list = [f'category={c_id}' for c_id in category_ids]
+        condition = ' or '.join(condition_list)
+        category_monthly_summary_sql = f'SELECT ROUND(SUM(amount), 2) as sum, c.name, mon' \
+                                       f' FROM {self.__name__} LEFT JOIN categories AS c on category=c.id' \
+                                       f' WHERE yr={year} and ({condition})' \
+                                       f' GROUP BY category, mon ORDER BY mon'
+        return self._fetch_all_action(category_monthly_summary_sql)
+
+    def get_sub_category_monthly_spending_of_a_category(self, year, category_ids: list):
+        """
+        This method will query all sub-categories monthly amount of a category id list
+        :param year: year in int
+        :param category_ids: list of ids of the category to be queried
+        :return:
+        """
+        condition_list = [f'category={c_id}' for c_id in category_ids]
+        condition = ' or '.join(condition_list)
+        sub_category_monthly_summary_sql = f'SELECT ROUND(SUM(amount), 2) as sum, s.name, mon' \
+                                           f' FROM {self.__name__} LEFT JOIN sub_categories AS s on sub_category=s.id' \
+                                           f' WHERE yr={year} and ({condition})' \
+                                           f' GROUP BY sub_category, mon ORDER BY mon'
+        return self._fetch_all_action(sub_category_monthly_summary_sql)
 
     def get_total_spending_amount_of_each_month(self, year: int, include_doctor: bool = True):
         """
