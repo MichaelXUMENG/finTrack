@@ -1,298 +1,320 @@
-import functools
-from flask import(
+from flask import (
     Blueprint, flash, redirect, render_template, request, url_for
 )
-from .db_utils import (
-    get_all_category, get_one_category, get_all_subCategory, get_one_subCategory, get_all_cards, get_one_card,
-    get_all_degrees, get_one_degree
-)
-from finTrack.db import get_db
+
+from finTrack.db import rollback_database, commit_database
+from .db_utils import Category, SubCategory, Card, Degree
 
 bp = Blueprint('setting', __name__, url_prefix='/setting')
 
 
 @bp.route('/')
 def catalog():
-    settings = {}
     try:
-        categories = get_all_category()
-        sub_categories = get_all_subCategory()
-        cards = get_all_cards()
-        degrees = get_all_degrees()
+        categories = Category().fetch_all_in_order()
+        sub_categories = SubCategory().fetch_all_in_order()
+        cards = Card().fetch_all_in_order(order='bank, name')
+        degrees = Degree().fetch_all_in_order(order='id')
 
         settings = {'cat': categories, 'sub': sub_categories, 'card': cards, 'degree': degrees}
+
+        commit_database()
+        return render_template('setting/catalog.html', settings=settings)
     except Exception as e:
         flash(e, 'error')
-    finally:
-        return render_template('setting/catalog.html', settings=settings)
+
+        rollback_database()
+        return redirect(url_for('index.index'))
 
 
 @bp.route('/category/add', methods=('GET', 'POST'))
 def category_add():
-    if request.method == 'POST':
-        cat_name = request.form['name']
+    if request.method == 'GET':
+        return render_template('setting/add_category.html')
 
-        try:
-            db = get_db()
-            db.execute(
-                'INSERT INTO categories (name)'
-                ' VALUES (?)',
-                (cat_name,)
-            )
-            db.commit()
-            flash('Category added!', 'success')
-        except Exception as e:
-            flash(e, 'error')
-        finally:
-            return redirect(url_for('setting.catalog'))
-    return render_template('setting/add_category.html')
+    cat_name = request.form.get('name', '')
+    if not cat_name.strip():
+        flash('No Category name!', 'error')
+        return redirect(url_for('setting.catalog'))
+
+    category_object = Category()
+    category_object.name = cat_name
+    try:
+        category_object.add_a_category()
+        flash('Category added!', 'success')
+
+        commit_database()
+
+    except Exception as e:
+        flash(e, 'error')
+
+        rollback_database()
+
+    return redirect(url_for('setting.catalog'))
 
 
 @bp.route('/category/<int:cid>/view')
 def category_view(cid):
     try:
-        cat = get_one_category(cid)
-        return render_template('setting/view/view_category.html', category=cat)
+        category = Category().fetch_one_by_id(cid)
+
+        commit_database()
+        return render_template('setting/view/view_category.html', category=category)
     except Exception as e:
         flash(e, 'error')
+
+        rollback_database()
         return redirect(url_for('setting.catalog'))
 
 
 @bp.route('/category/<int:cid>/edit', methods=('GET', 'POST'))
 def category_edit(cid):
-    if request.method == 'POST':
-        cat_name = request.form['name']
+    category_object = Category()
 
+    if request.method == 'GET':
         try:
-            db = get_db()
-            db.execute(
-                'UPDATE categories SET name = ?'
-                ' WHERE id = ?',
-                (cat_name, cid)
-            )
-            db.commit()
-            flash('Category updated!', 'success')
+            category = category_object.fetch_one_by_id(cid)
+
+            commit_database()
+            return render_template('setting/edit/edit_category.html', category=category)
         except Exception as e:
             flash(e, 'error')
-        finally:
+
+            rollback_database()
             return redirect(url_for('setting.category_view', cid=cid))
-    else:
-        try:
-            cat = get_one_category(cid)
-            return render_template('setting/edit/edit_category.html', category=cat)
-        except Exception as e:
-            flash(e, 'error')
-            return redirect(url_for('setting.category_view', cid=cid))
+
+    cat_name = request.form.get('name', '')
+    if not cat_name.strip():
+        flash('No Category name!', 'error')
+        return redirect(url_for('setting.category_view', cid=cid))
+
+    category_object.name = cat_name
+    category_object.id = cid
+    try:
+        category_object.update_category()
+        flash('Category updated!', 'success')
+
+        commit_database()
+    except Exception as e:
+        flash(e, 'error')
+
+        rollback_database()
+
+    return redirect(url_for('setting.category_view', cid=cid))
 
 
 @bp.route('/<int:cid>/sub-category/add', methods=('GET', 'POST'))
 def sub_category_add(cid):
-    if request.method == 'POST':
-        sub_name = request.form['name']
-        cat_id = request.form['c_id']
-        card = request.form['default_card']
-        degree = request.form['default_degree']
+    if request.method == 'GET':
+        try:
+            category = Category().fetch_one_by_id(cid)
+            cards = Card().fetch_all_in_order(order='bank, name')
+            degrees = Degree().fetch_all_in_order(order='id')
 
-        try:
-            db = get_db()
-            db.execute(
-                'INSERT INTO sub_categories (name, c_id, default_card, default_degree)'
-                ' VALUES (?, ?, ?, ?)',
-                (sub_name, cat_id, card, degree)
-            )
-            db.commit()
-            flash('Sub-category added!', 'success')
+            commit_database()
+            return render_template('setting/add_subcategory.html', category=category, cards=cards, degrees=degrees)
         except Exception as e:
             flash(e, 'error')
-        finally:
+
+            rollback_database()
             return redirect(url_for('setting.catalog'))
-    else:
-        try:
-            cat = get_one_category(cid)
-            cards = get_all_cards()
-            degrees = get_all_degrees()
-            return render_template('setting/add_subcategory.html', category=cat, cards=cards, degrees=degrees)
-        except Exception as e:
-            flash(e, 'error')
-            return redirect(url_for('setting.catalog'))
+
+    sub_category_object = SubCategory()
+
+    try:
+        sub_category_object.load_a_sub_category(request.form)
+        sub_category_object.add_a_sub_category()
+
+        flash('Sub-category added!', 'success')
+        commit_database()
+    except Exception as e:
+        flash(e, 'error')
+        rollback_database()
+
+    return redirect(url_for('setting.catalog'))
 
 
 @bp.route('/sub-category/<int:sid>/view')
 def sub_category_view(sid):
     try:
-        db = get_db()
-        sub = db.execute(
-            'SELECT s.id, s.name, c.name AS c_name, default_card, default_degree'
-            ' FROM sub_categories AS s LEFT JOIN categories AS c on s.c_id=c.id'
-            ' WHERE s.id = ?',
-            (sid,)
-        ).fetchone()
-        subCat = dict(sub)
-        if subCat['default_card']:
-            card = get_one_card(subCat['default_card'])
-            subCat['default_card'] = card['name'] + ' - ' + card['bank']
-        if subCat['default_degree']:
-            degree = get_one_degree(subCat['default_degree'])
-            subCat['default_degree'] = degree['name']
-        return render_template('setting/view/view_subcategory.html', sub_category=subCat)
+        sub_category = SubCategory().fetch_one_by_id(sid)
+        sub_cat_dict = dict(sub_category)
+        sub_cat_dict['c_name'] = Category().fetch_one_by_id(sub_category['c_id'])['name']
+        sub_cat_dict['default_card'] = Card().get_a_card_name(sub_category['default_card'])
+        sub_cat_dict['default_degree'] = Degree().get_a_degree_name(sub_category['default_degree'])
+
+        commit_database()
+        return render_template('setting/view/view_subcategory.html', sub_category=sub_cat_dict)
     except Exception as e:
         flash(e, 'error')
+
+        rollback_database()
         return redirect(url_for('setting.catalog'))
 
 
 @bp.route('/sub-category/<int:sid>/edit', methods=('GET', 'POST'))
 def sub_category_edit(sid):
-    if request.method == 'POST':
-        sub_name = request.form['name']
-        cat_id = request.form['c_id']
-        card = request.form['default_card']
-        degree = request.form['default_degree']
+    sub_category_object = SubCategory()
 
+    if request.method == 'GET':
         try:
-            db = get_db()
-            db.execute(
-                'UPDATE sub_categories SET name = ?, c_id=?, default_card=?, default_degree=?'
-                ' WHERE id = ?',
-                (sub_name, cat_id, card, degree, sid)
-            )
-            db.commit()
-            flash('Sub-category updated!', 'success')
-        except Exception as e:
-            flash(e, 'error')
-        finally:
-            return redirect(url_for('setting.sub_category_view', sid=sid))
-    else:
-        try:
-            subCat = get_one_subCategory(sid)
-            cat = get_all_category()
-            cards = get_all_cards()
-            degrees = get_all_degrees()
+            sub_category = sub_category_object.fetch_one_by_id(sid)
+            categories = Category().fetch_all_in_order()
+            cards = Card().fetch_all_in_order(order='bank, name')
+            degrees = Degree().fetch_all_in_order(order='id')
+
+            commit_database()
             return render_template('setting/edit/edit_subcategory.html',
-                                   sub_category=subCat, category=cat, cards=cards, degrees=degrees)
+                                   sub_category=sub_category, category=categories, cards=cards, degrees=degrees)
         except Exception as e:
             flash(e, 'error')
+
+            rollback_database()
             return redirect(url_for('setting.sub_category_view', sid=sid))
+
+    try:
+        sub_category_object.load_a_sub_category(request.form)
+        sub_category_object.id = sid
+        sub_category_object.update_sub_category()
+
+        flash('Sub-category updated!', 'success')
+
+        commit_database()
+    except Exception as e:
+        flash(e, 'error')
+        rollback_database()
+
+    return redirect(url_for('setting.sub_category_view', sid=sid))
 
 
 @bp.route('/card/add', methods=('GET', 'POST'))
 def card_add():
-    if request.method == 'POST':
-        card_name = request.form['name']
-        bank_name = request.form['bank']
-        pay_date = int(request.form['pay_day'])
-        balance = int(request.form['balance'])
+    if request.method == 'GET':
+        return render_template('setting/add_card.html')
 
-        try:
-            db = get_db()
-            db.execute(
-                'INSERT INTO cards (name, bank, cur_balance, pay_date)'
-                ' VALUES (?, ?, ?, ?)',
-                (card_name, bank_name, balance, pay_date)
-            )
-            db.commit()
-            flash('A new card added!', 'success')
-        except Exception as e:
-            flash(e, 'error')
-        finally:
-            return redirect(url_for('setting.catalog'))
-
-    return render_template('setting/add_card.html')
-
-
-@bp.route('/card/<int:id>/view')
-def card_view(id):
+    card_object = Card()
     try:
-        card = get_one_card(id)
+        card_object.load_a_card(request.form)
+        card_object.add_a_new_card()
+        flash('A new card added!', 'success')
+
+        commit_database()
+    except Exception as e:
+        flash(e, 'error')
+
+        rollback_database()
+
+    return redirect(url_for('setting.catalog'))
+
+
+@bp.route('/card/<int:card_id>/view')
+def card_view(card_id):
+    try:
+        card = Card().fetch_one_by_id(card_id)
+
+        commit_database()
         return render_template('setting/view/view_card.html', card=card)
     except Exception as e:
         flash(e, 'error')
+
+        rollback_database()
         return redirect(url_for('setting.catalog'))
 
 
-@bp.route('/card/<int:id>/edit', methods=('GET', 'POST'))
-def card_edit(id):
-    if request.method == 'POST':
-        card_name = request.form['name']
-        bank_name = request.form['bank']
-        pay_date = int(request.form['pay_day'])
-        balance = int(request.form['balance'])
+@bp.route('/card/<int:card_id>/edit', methods=('GET', 'POST'))
+def card_edit(card_id):
+    card_object = Card()
+    card_object.id = card_id
+    if request.method == 'GET':
+        try:
+            card = card_object.fetch_one_by_id(card_id)
 
-        try:
-            db = get_db()
-            db.execute(
-                'UPDATE cards SET name = ?, bank=?, cur_balance=?, pay_date=?'
-                ' WHERE id = ?',
-                (card_name, bank_name, pay_date, balance, id)
-            )
-            db.commit()
-            flash('Card information updated!', 'success')
-        except Exception as e:
-            flash(e, 'error')
-        finally:
-            return redirect(url_for('setting.card_view', id=id))
-    else:
-        try:
-            card = get_one_card(id)
+            commit_database()
             return render_template('setting/edit/edit_card.html', card=card)
         except Exception as e:
             flash(e, 'error')
-            return redirect(url_for('setting.card_view', id=id))
+
+            rollback_database()
+            return redirect(url_for('setting.card_view', card_id=card_id))
+
+    try:
+        card_object.load_a_card(request.form)
+        card_object.update_card_information()
+        flash('Card information updated!', 'success')
+
+        commit_database()
+
+    except Exception as e:
+        flash(e, 'error')
+        rollback_database()
+
+    return redirect(url_for('setting.card_view', card_id=card_id))
 
 
 @bp.route('/degree/add', methods=('GET', 'POST'))
 def degree_add():
-    if request.method == 'POST':
-        degree_name = request.form['name']
+    if request.method == 'GET':
+        return render_template('setting/add_degree.html')
 
-        try:
-            db = get_db()
-            db.execute(
-                'INSERT INTO degrees (name)'
-                ' VALUES (?)',
-                (degree_name,)
-            )
-            db.commit()
-            flash('A new degree added!', 'success')
-        except Exception as e:
-            flash(e, 'error')
-        finally:
-            return redirect(url_for('setting.catalog'))
+    degree_object = Degree()
+    degree_object.name = request.form.get('name', '')
+    if not degree_object.name.strip():
+        flash('No Degree name!', 'error')
+        return redirect(url_for('setting.catalog'))
 
-    return render_template('setting/add_degree.html')
-
-
-@bp.route('/degree/<int:id>/view')
-def degree_view(id):
     try:
-        degree = get_one_degree(id)
+        degree_object.add_a_degree()
+        flash('A new degree added!', 'success')
+
+        commit_database()
+    except Exception as e:
+        flash(e, 'error')
+
+        rollback_database()
+
+    return redirect(url_for('setting.catalog'))
+
+
+@bp.route('/degree/<int:degree_id>/view')
+def degree_view(degree_id):
+    try:
+        degree = Degree().fetch_one_by_id(degree_id)
+
+        commit_database()
         return render_template('setting/view/view_degree.html', degree=degree)
     except Exception as e:
         flash(e, 'error')
+
+        rollback_database()
         return redirect(url_for('setting.catalog'))
 
 
-@bp.route('/degree/<int:id>/edit', methods=('GET', 'POST'))
-def degree_edit(id):
-    if request.method == 'POST':
-        degree_name = request.form['name']
+@bp.route('/degree/<int:degree_id>/edit', methods=('GET', 'POST'))
+def degree_edit(degree_id):
+    degree_object = Degree()
+    degree_object.id = degree_id
 
+    if request.method == 'GET':
         try:
-            db = get_db()
-            db.execute(
-                'UPDATE degrees SET name = ?'
-                ' WHERE id = ?',
-                (degree_name, id)
-            )
-            db.commit()
-            flash('Degree got updated!', 'success')
-        except Exception as e:
-            flash(e, 'error')
-        finally:
-            return redirect(url_for('setting.degree_view', id=id))
-    else:
-        try:
-            degree = get_one_degree(id)
+            degree = degree_object.fetch_one_by_id(degree_id)
+
+            commit_database()
             return render_template('setting/edit/edit_degree.html', degree=degree)
         except Exception as e:
             flash(e, 'error')
-            return redirect(url_for('setting.degree_view', id=id))
+
+            rollback_database()
+            return redirect(url_for('setting.degree_view', degree_id=degree_id))
+
+    try:
+        degree_object.name = request.form.get('name', '')
+        degree_object.update_degree()
+        flash('Degree got updated!', 'success')
+
+        commit_database()
+    except Exception as e:
+        flash(e, 'error')
+
+        rollback_database()
+
+    return redirect(url_for('setting.degree_view', degree_id=degree_id))

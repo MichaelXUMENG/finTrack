@@ -1,277 +1,551 @@
-from finTrack.db import get_db
-from werkzeug.exceptions import abort
-
-"""
-Get the setting from database
-"""
+from sqlalchemy import create_engine
+import re
 
 
-def get_all_category(order='name'):
-    cats = get_db().execute(
-        'SELECT id, name'
-        ' FROM categories'
-        ' ORDER BY ?',
-        (order,)
-    ).fetchall()
-    return cats
+def get_database_connection():
+    engine = create_engine("sqlite:///instance/finTrack.sqlite")
+    return engine.connect()
 
 
-def get_one_category(id):
-    cat = get_db().execute(
-        'SELECT id, name'
-        ' FROM categories'
-        ' WHERE id = ?',
-        (id,)
-    ).fetchone()
-    return cat
+class AllSettings(object):
+    __name__ = 'AllSettings'
+
+    id = int()
+    name = str()
+
+    @staticmethod
+    def _fetch_all_action(sql_command: str):
+        """
+        This method wil execute the sql_command, and fetch all result and return
+        :param sql_command: the sql command to be executed
+        :return:
+        """
+        connection = get_database_connection()
+        try:
+            all_items = connection.execute(sql_command).fetchall()
+        finally:
+            connection.close()
+        return all_items
+
+    @staticmethod
+    def _fetch_one_action(sql_command: str):
+        """
+        This method wil execute the sql_command, and fetch one result and return
+        :param sql_command: the sql command to be executed
+        :return:
+        """
+        connection = get_database_connection()
+        try:
+            item = connection.execute(sql_command).fetchone()
+        finally:
+            connection.close()
+        return item
+
+    def _update_database(self, field_name_list: list, value_tuple: tuple):
+        """
+        This method will execute the UPDATE command
+        :param field_name_list: list of database fields to be updated
+        :param value_tuple: the actual values of the field. Should be the same order of filed name
+        :return:
+        """
+        connection = get_database_connection()
+        fields_to_update = ' = ?, '.join(field_name_list) + ' = ?'
+        try:
+            connection.execute(
+                f'UPDATE {self.__name__} SET {fields_to_update} WHERE id = {self.id}',
+                value_tuple
+            )
+        finally:
+            connection.close()
+
+    def _insert_into_database(self, field_name: str, value_tuple: tuple):
+        """
+        This method will insert a row into database
+        :param field_name: list of database fields
+        :param value_tuple: the actual values of the field. Should be the same order of filed name
+        :return:
+        """
+        connection = get_database_connection()
+        try:
+            connection.execute(
+                f'INSERT INTO {self.__name__} ({field_name})'
+                f' VALUES ({",".join(["?" for _ in range(len(value_tuple))])})',
+                value_tuple
+            )
+        finally:
+            connection.close()
+
+    def fetch_all(self):
+        sql_command = f'SELECT * FROM {self.__name__}'
+        return self._fetch_all_action(sql_command)
+
+    def fetch_all_in_order(self, order: str = 'name'):
+        """
+        get all items sorted by the item passed in order
+        :param order: the column to be sorted
+        :return:
+        """
+        all_items_sql = f'SELECT * FROM {self.__name__} ORDER BY {order}'
+        return self._fetch_all_action(all_items_sql)
+
+    def fetch_one_by_id(self, item_id: int):
+        """
+        Get one item by its id
+        :param item_id: item id
+        :return:
+        """
+        single_item_sql = f'SELECT * FROM {self.__name__} WHERE id = {item_id}'
+        return self._fetch_one_action(single_item_sql)
 
 
-def get_subcats_from_a_cat(id):
-    subCat = get_db().execute(
-        'SELECT id, name'
-        ' FROM sub_categories'
-        ' WHERE c_id=?'
-        ' ORDER BY id',
-        (id, )
-    ).fetchall()
-    return subCat
+class Category(AllSettings):
+    __name__ = 'categories'
+
+    def get_category_id_by_name(self, category_name: str):
+        """
+        Get the category id given the category name
+        :param category_name: category name in string
+        :return:
+        """
+        one_category_sql = f'SELECT id FROM {self.__name__} WHERE name = "{category_name}"'
+        category = self._fetch_one_action(one_category_sql)
+        return category['id']
+
+    def add_a_category(self):
+        """
+        This method inserts a new category into database
+        :return:
+        """
+        field_name = 'name'
+        value_tuple = (self.name,)
+        self._insert_into_database(field_name, value_tuple)
+
+    def update_category(self):
+        """
+        This method updates an existing category name
+        :return:
+        """
+        field_name = ['name']
+        value_tuple = (self.name,)
+        self._update_database(field_name, value_tuple)
 
 
-def get_all_subCategory(order='name'):
-    subCat = get_db().execute(
-        'SELECT id, name, c_id, default_card, default_degree'
-        ' FROM sub_categories'
-        ' ORDER BY ?',
-        (order,)
-    ).fetchall()
-    return subCat
+class SubCategory(AllSettings):
+    __name__ = 'sub_categories'
+
+    c_id = int()
+    default_card = int()
+    default_degree = int()
+
+    def fetch_all_subcategories_in_category(self, category_id: int):
+        """
+        This method will get a list of all linked sub-categories from a category
+        :param category_id: the id of parent category
+        :return:
+        """
+        all_sub_categories_from_cat_sql = f'SELECT * FROM {self.__name__} WHERE c_id = {category_id} ORDER BY id'
+        return self._fetch_all_action(all_sub_categories_from_cat_sql)
+
+    ################################################################################
+    # Add sub-category
+    ################################################################################
+
+    def load_a_sub_category(self, request_form):
+        """
+        This method will load the sub-category with data from the form
+        :param request_form: the request form from website
+        :return:
+        """
+        self.name = request_form.get('name', '')
+        self.c_id = request_form.get('c_id', -1)
+        self.default_card = request_form.get('default_card', None)
+        self.default_degree = request_form.get('default_degree', None)
+
+    def add_a_sub_category(self):
+        """
+        This method inserts a new sub-category into database
+        :return:
+        """
+        field_name = "name, c_id, default_card, default_degree"
+        value_tuple = (self.name, self.c_id, self.default_card, self.default_degree)
+        self._insert_into_database(field_name, value_tuple)
+
+    def update_sub_category(self):
+        """
+        This method updates a sub-category entry
+        :return:
+        """
+        field_name = ['name', 'c_id', 'default_card', 'default_degree']
+        value_tuple = (self.name, self.c_id, self.default_card, self.default_degree)
+        self._update_database(field_name, value_tuple)
 
 
-def get_one_subCategory(sub_id):
-    subCat = get_db().execute(
-        'SELECT id, name, c_id, default_card, default_degree'
-        ' FROM sub_categories'
-        ' WHERE id = ?',
-        (sub_id,)
-    ).fetchone()
+class Card(AllSettings):
+    __name__ = 'cards'
 
-    if subCat is None:
-        abort(404, f"Sub-Category id {sub_id} doesn't exist.")
+    bank = str()
+    cur_balance = float()
+    pay_date = int()
+    last_statement = str()
 
-    return subCat
+    def fetch_one_card_by_name(self, card_name: str):
+        """
+        Get one card by its name in format name - bank
+        :param card_name: card name in 'name - bank' format
+        :return:
+        """
+        card_info = card_name.split(' - ')
+        one_card_sql = f'SELECT * FROM {self.__name__} WHERE name = "{card_info[0]}" and bank = "{card_info[1]}"'
+        return self._fetch_one_action(one_card_sql)
 
+    def get_a_card_name(self, card_id: int):
+        """
+        This method will return the card name as 'bank - name' by a given id
+        :param card_id: card id
+        :return:
+        """
+        if not card_id:
+            return ''
+        card = self.fetch_one_by_id(card_id)
+        return ' - '.join([card['name'], card['bank']])
 
-def get_all_cards(order='bank, name'):
-    card = get_db().execute(
-        'SELECT id, name, bank, cur_balance, pay_date, last_statement'
-        ' FROM cards'
-        ' ORDER BY ?',
-        (order,)
-    ).fetchall()
-    return card
+    ################################################################################
+    # Update Card
+    ################################################################################
 
+    def load_a_card(self, request_form):
+        """
+        This method loads information of a card
+        :param request_form: the request form which contains the information
+        :return:
+        """
+        self.name = request_form.get('name', '')
+        self.bank = request_form.get('bank', '')
+        self.pay_date = int(request_form.get('pay_day', 0))
+        self.cur_balance = int(request_form.get('balance', 0))
 
-def get_one_card(card_id=0):
-    card = get_db().execute(
-        'SELECT id, name, bank, cur_balance, pay_date, last_statement'
-        ' FROM cards'
-        ' WHERE id = ?',
-        (card_id,)
-    ).fetchone()
+    def add_a_new_card(self):
+        """
+        This method will insert a card into database
+        :return:
+        """
+        field_name = "name, bank, cur_balance, pay_date"
+        value_tuple = (self.name, self.bank, self.cur_balance, self.pay_date)
+        self._insert_into_database(field_name, value_tuple)
 
-    if card is None:
-        abort(404, f"Card id {card_id} doesn't exist.")
+    def update_card_information(self):
+        """
+        This method will update information of a card
+        :return:
+        """
+        field_name = ['name', 'bank', 'cur_balance', 'pay_date']
+        value_tuple = (self.name, self.bank, self.cur_balance, self.pay_date)
+        self._update_database(field_name, value_tuple)
 
-    return card
+    def update_card_balance(self):
+        """
+        This method will update a card current balance
+        :return:
+        """
+        field_name = ['cur_balance']
+        value_tuple = (self.cur_balance,)
+        self._update_database(field_name, value_tuple)
 
-
-def get_card_by_name(card_name):
-    card_info = card_name.split(' - ')
-    card = get_db().execute(
-        'SELECT id, name, bank, cur_balance, pay_date, last_statement'
-        ' FROM cards'
-        ' WHERE name = ? and bank = ?',
-        (card_info[0], card_info[1])
-    ).fetchone()
-    return card
-
-
-def get_all_degrees(order='name'):
-    degrees = get_db().execute(
-        'SELECT id, name'
-        ' FROM degrees'
-        ' ORDER BY ?',
-        (order,)
-    ).fetchall()
-    return degrees
-
-
-def get_one_degree(id):
-    degree = get_db().execute(
-        'SELECT id, name'
-        ' FROM degrees'
-        ' WHERE id = ?',
-        (id,)
-    ).fetchone()
-    return degree
-
-
-def get_spending_years():
-    years = get_db().execute(
-        'SELECT DISTINCT yr'
-        ' FROM spending'
-        ' ORDER BY yr DESC'
-    ).fetchall()
-    return years
-
-
-"""
-The Report Part (actual number)
-"""
+    def update_card_statement_information(self):
+        """
+        This method will update a card current balance
+        :return:
+        """
+        field_name = ['last_statement', 'cur_balance']
+        value_tuple = (self.last_statement, self.cur_balance)
+        self._update_database(field_name, value_tuple)
 
 
-# exclude the doctor category
-def get_all_spendings():
-    spendings = get_db().execute(
-        'SELECT id, name, amount, category, sub_category, yr, mon, daynum, card, degree, comments'
-        ' FROM spending'
-        ' WHERE category!=?'
-        ' ORDER BY yr DESC, mon DESC, daynum DESC, card',
-        (16,)
-    ).fetchall()
-    return spendings
+class Degree(AllSettings):
+    __name__ = 'degrees'
+
+    def get_a_degree_name(self, degree_id: int):
+        """
+        This method will return the degree's name by a given id
+        :param degree_id: degree id
+        :return:
+        """
+        if not degree_id:
+            return ''
+        degree = self.fetch_one_by_id(degree_id)
+        return degree['name']
+
+    ################################################################################
+    # Update Card
+    ################################################################################
+
+    def add_a_degree(self):
+        """
+        This method inserts a new degree into database
+        :return:
+        """
+        field_name = 'name'
+        value_tuple = (self.name,)
+        self._insert_into_database(field_name, value_tuple)
+
+    def update_degree(self):
+        """
+        This method updates information of a degree
+        :return:
+        """
+        field_name = ['name']
+        value_tuple = (self.name,)
+        self._update_database(field_name, value_tuple)
 
 
-def get_doctor_spendings():
-    doc_spendings = get_db().execute(
-        'SELECT id, name, amount, sub_category, yr, mon, daynum, card, degree, comments'
-        ' FROM spending'
-        ' WHERE category=?'
-        ' ORDER BY yr DESC, mon DESC, daynum DESC, card',
-        (16,)
-    ).fetchall()
-    return doc_spendings
+class Spending(AllSettings):
+    __name__ = 'spending'
+
+    amount = float()
+    category = int()
+    sub_category = int()
+    yr = int()
+    mon = int()
+    daynum = int()
+    card = int()
+    degree = int()
+    comments = str()
+
+    ###############################################################
+    # Get all section
+    ###############################################################
+
+    def get_years(self):
+        """
+        This method will return a list of distinct years of all spendings
+        :return:
+        """
+        years_sql = f'SELECT DISTINCT yr FROM {self.__name__} ORDER BY yr DESC'
+        return self._fetch_all_action(years_sql)
+
+    def fetch_all_spendings_from_a_card(self, card_id: int, include_doctor: bool = True):
+        """
+        Get all spendings from a card, fetching from a card id
+        :param card_id: id of the card
+        :param include_doctor: boolean value, whether to include doctor category (16)
+        :return:
+        """
+        condition = f'card = {card_id}' if include_doctor else f'card = {card_id} and category != 16'
+        card_spending_sql = f'SELECT * FROM {self.__name__} WHERE {condition}' \
+                            f' ORDER BY yr DESC, mon DESC, daynum DESC, card'
+        return self._fetch_all_action(card_spending_sql)
+
+    def fetch_all_spending_of_category_in_month(self, year: int, month: int, category_id: int):
+        """
+        This method will get all spending of a category within a particular month of a year
+        :param year: the year of spending
+        :param month: the month of spending
+        :param category_id: the id of category to fetch spending
+        :return:
+        """
+        spending_category_month_sql = f'SELECT * FROM {self.__name__}' \
+                                      f' WHERE yr = {year} and mon = {month} and category = {category_id}' \
+                                      f' ORDER BY daynum DESC'
+        return self._fetch_all_action(spending_category_month_sql)
+
+    def fetch_all_category_spending(self, include_doctor: bool = True):
+        """
+        Get spending from all category
+        :param include_doctor: boolean value, whether to include doctor category (16)
+        :return:
+        """
+        condition = '' if include_doctor else f' WHERE category != 16'
+        all_spending_sql = f'SELECT * FROM {self.__name__}{condition} ORDER BY yr DESC, mon DESC, daynum DESC, card'
+        return self._fetch_all_action(all_spending_sql)
+
+    ###############################################################
+    # Summary Section
+    ###############################################################
+
+    def get_total_spending_amount_of_month(self, year: int, month: int, category: int = None):
+        """
+        Get the amount of total spending of a month in a year.
+        If the category is provided, then return the total spending of that category in that month
+        Otherwise return all category except for doctor category (16)
+        :param year: year in int
+        :param month: month in int
+        :param category: id of a particular category or None
+        :return:
+        """
+        condition = ' and category != 16' if category is None else f' and category = {category}'
+        total_spending_amount_sql = f'SELECT ROUND(SUM(amount), 2) as sum FROM {self.__name__}' \
+                                    f' WHERE yr = {year} and mon = {month}{condition}'
+        total_spending_amount = self._fetch_one_action(total_spending_amount_sql)
+        return total_spending_amount['sum']
+
+    def get_each_category_total_spending_amount_of_month(self, year: int, month: int, include_doctor: bool = True,
+                                                         category_name: bool = False):
+        """
+        This method get total spending of each category of a month, and return them all as a list. If the include_doctor
+        indicator set to False, then the list will exclude doctor category (16)
+        :param year: year in int
+        :param month: month in int
+        :param include_doctor: whether to include doctor category. Default set to True
+        :param category_name: whether to query category name, if set to False, then query category id instead
+        :return:
+        """
+        condition = '' if include_doctor else ' and category != 16'
+        if category_name:
+            category_info = 'c.name'
+            join_clause = ' LEFT JOIN categories AS c on category = c.id'
+        else:
+            category_info = 'category'
+            join_clause = ''
+        each_month_spending_amount_sql = f'SELECT ROUND(SUM(amount), 2) as sum, {category_info}' \
+                                         f' FROM {self.__name__}{join_clause}' \
+                                         f' WHERE yr = {year} and mon = {month}{condition}' \
+                                         f' GROUP BY category ORDER BY SUM(amount) DESC'
+        return self._fetch_all_action(each_month_spending_amount_sql)
+
+    def get_specific_category_monthly_spending(self, year: int, category_ids: list):
+        """
+        This method will query the monthly amount of spending given a category id list
+        :param year: year in int
+        :param category_ids: list of id of the category to be queried
+        :return:
+        """
+        condition_list = [f'category={c_id}' for c_id in category_ids]
+        condition = ' or '.join(condition_list)
+        category_monthly_summary_sql = f'SELECT ROUND(SUM(amount), 2) as sum, mon' \
+                                       f' FROM {self.__name__}' \
+                                       f' WHERE yr={year} and ({condition})' \
+                                       f' GROUP BY mon ORDER BY mon'
+        return self._fetch_all_action(category_monthly_summary_sql)
+
+    def get_categories_monthly_spending_with_category_name(self, year: int, category_ids: list):
+        """
+        This method will query the monthly amount of spending given a category id list
+        :param year: year in int
+        :param category_ids: list of id of the category to be queried
+        :return:
+        """
+        condition_list = [f'category={c_id}' for c_id in category_ids]
+        condition = ' or '.join(condition_list)
+        category_monthly_summary_sql = f'SELECT ROUND(SUM(amount), 2) as sum, c.name, mon' \
+                                       f' FROM {self.__name__} LEFT JOIN categories AS c on category=c.id' \
+                                       f' WHERE yr={year} and ({condition})' \
+                                       f' GROUP BY category, mon ORDER BY mon'
+        return self._fetch_all_action(category_monthly_summary_sql)
+
+    def get_sub_category_monthly_spending_of_a_category(self, year, category_ids: list):
+        """
+        This method will query all sub-categories monthly amount of a category id list
+        :param year: year in int
+        :param category_ids: list of ids of the category to be queried
+        :return:
+        """
+        condition_list = [f'category={c_id}' for c_id in category_ids]
+        condition = ' or '.join(condition_list)
+        sub_category_monthly_summary_sql = f'SELECT ROUND(SUM(amount), 2) as sum, s.name, mon' \
+                                           f' FROM {self.__name__} LEFT JOIN sub_categories AS s on sub_category=s.id' \
+                                           f' WHERE yr={year} and ({condition})' \
+                                           f' GROUP BY sub_category, mon ORDER BY mon'
+        return self._fetch_all_action(sub_category_monthly_summary_sql)
+
+    def get_total_spending_amount_of_each_month(self, year: int, include_doctor: bool = True):
+        """
+        This method will get each month's total spending of a year.
+        Exclude doctor category if include_doctor is set to False
+        :param year: year in int
+        :param include_doctor: whether to include doctor category. Default set to True
+        :return:
+        """
+        condition = '' if include_doctor else ' and category != 16'
+        each_month_total_spending_sql = f'SELECT ROUND(SUM(amount), 2) as sum, mon FROM {self.__name__}' \
+                                        f' WHERE yr = {year}{condition} GROUP BY mon ORDER BY mon'
+        return self._fetch_all_action(each_month_total_spending_sql)
+
+    def get_total_spending_of_a_year(self, year: int, include_doctor: bool = True):
+        """
+        This method will return total amount of spending of a given year
+        :param year: the year to be summarized
+        :param include_doctor: whether to include doctor category. Default set to True
+        :return:
+        """
+        condition = '' if include_doctor else ' and category != 16'
+        yearly_total_spending_sql = f'SELECT ROUND(SUM(amount), 2) as sum FROM {self.__name__}' \
+                                    f' WHERE yr = {year}{condition}'
+        yearly_total_spending_amount = self._fetch_one_action(yearly_total_spending_sql)
+        return yearly_total_spending_amount['sum']
+
+    ################################################################################
+    # Add Spending
+    ################################################################################
+
+    def load_spending_values(self, request_form):
+        """
+        This method will load the spending object with values
+        :param request_form: the request object containing the values
+        :return:
+        """
+        self.name = request_form.form.get('name', 'N/A')
+        self.amount = float(request_form.form.get('amount', 0.0))
+        self.sub_category = int(request_form.form.get('sub_category', -1))
+        self.card = int(request_form.form.get('card', -1))
+        self.degree = int(request_form.form.get('degree', -1))
+        self.comments = request_form.form.get('comments', '')
+        date = request_form.form.get('date', '01/01/1960')
+
+        date_match = re.fullmatch(r"([0-9]{1,2})/([0-9]{1,2})/([0-9]{2,4})", date)
+        if date_match is None:
+            date_match = re.fullmatch(r"([0-9]{1,2})-([0-9]{1,2})-([0-9]{2,4})", date)
+        self.yr, self.mon, self.daynum = int(date_match.group(3)), int(date_match.group(1)), int(date_match.group(2))
+
+    def add_a_spending(self):
+        """
+        Add the spending object into database
+        :return:
+        """
+        field_name = 'name, amount, category, sub_category, yr, mon, daynum, card, degree, comments'
+        value_tuple = (self.name, self.amount, self.category, self.sub_category, self.yr, self.mon, self.daynum,
+                       self.card, self.degree, self.comments)
+        self._insert_into_database(field_name, value_tuple)
+
+    def update_a_spending(self):
+        """
+        Update an existing spending object in database
+        :return:
+        """
+        field_name = ['name', 'amount', 'category', 'sub_category', 'yr', 'mon', 'daynum', 'card', 'degree', 'comments']
+        value_tuple = (self.name, self.amount, self.category, self.sub_category, self.yr, self.mon, self.daynum,
+                       self.card, self.degree, self.comments)
+        self._update_database(field_name, value_tuple)
 
 
-def get_one_spending(id):
-    spending = get_db().execute(
-        'SELECT id, name, amount, category, sub_category, yr, mon, daynum, card, degree, comments'
-        ' FROM spending'
-        ' WHERE id = ?',
-        (id,)
-    ).fetchone()
-    return spending
+class DoctorSpending(AllSettings):
+    __name__ = 'spending'
 
+    def fetch_doctor_spending(self):
+        """
+        This method will query each transaction of doctor category
+        :return:
+        """
+        doctor_spending_sql = f'SELECT * FROM {self.__name__} WHERE category = 16' \
+                              f' ORDER BY yr DESC, mon DESC, daynum DESC, card'
+        return self._fetch_all_action(doctor_spending_sql)
 
-def get_spendings_card(card):
-    spendings = get_db().execute(
-        'SELECT id, name, amount, category, sub_category, yr, mon, daynum, card, degree, comments'
-        ' FROM spending'
-        ' WHERE card = ? and category!=?'
-        ' ORDER BY yr DESC, mon DESC, daynum DESC, card',
-        (card, 16)
-    ).fetchall()
-    return spendings
+    def get_doctor_spending_of_each_month(self):
+        """
+        This method will get total spending amount of doctor category of each month
+        :return:
+        """
+        monthly_doctor_spending_amount_sql = f'SELECT ROUND(SUM(amount), 2) as sum, yr, mon FROM {self.__name__}' \
+                                             f' WHERE category = 16' \
+                                             f' GROUP BY yr, mon' \
+                                             f' ORDER BY yr, mon'
+        return self._fetch_all_action(monthly_doctor_spending_amount_sql)
 
-
-def get_all_spendings_card(card):
-    spendings = get_db().execute(
-        'SELECT id, name, amount, category, sub_category, yr, mon, daynum, card, degree, comments'
-        ' FROM spending'
-        ' WHERE card = ?'
-        ' ORDER BY yr DESC, mon DESC, daynum DESC, card',
-        (card,)
-    ).fetchall()
-    return spendings
-
-
-def get_spendings_month_cat(year, month, cat):
-    spendings = get_db().execute(
-        'SELECT id, name, amount, sub_category, yr, mon, daynum, card, degree, comments'
-        ' FROM spending'
-        ' WHERE yr = ? and mon=? and category=?'
-        ' ORDER BY daynum DESC',
-        (year, month, cat)
-    ).fetchall()
-    return spendings
-
-
-"""
-The Summary Part (the summary numbers)
-"""
-
-
-def get_total_spending_month_cat(year, month, category) -> int:
-    summary = get_db().execute(
-        'SELECT ROUND(SUM(amount), 2) as sum'
-        ' FROM spending'
-        ' WHERE yr=? and mon=? and category=?',
-        (year, month, category)
-    ).fetchone()
-    return summary['sum']
-
-
-def get_total_spending_month(year, month):
-    summary = get_db().execute(
-        'SELECT ROUND(SUM(amount), 2) as sum'
-        ' FROM spending'
-        ' WHERE yr=? and mon=? and category!=?',
-        (year, month, 16)
-    ).fetchone()
-    return summary
-
-
-def get_category_total_spending_month(year, month):
-    summary = get_db().execute(
-        'SELECT category, ROUND(SUM(amount), 2) as sum'
-        ' FROM spending'
-        ' WHERE yr=? and mon=? and category!=?'
-        ' GROUP BY category'
-        ' ORDER BY SUM(amount) DESC',
-        (year, month, 16)
-    ).fetchall()
-    return summary
-
-
-def get_month_total_spending_year(year):
-    summary = get_db().execute(
-        'SELECT ROUND(SUM(amount), 2) as sum, mon'
-        ' FROM spending'
-        ' WHERE yr=? and category!=?'
-        ' GROUP BY mon'
-        ' ORDER BY mon',
-        (year, 16,)
-    ).fetchall()
-    return summary
-
-
-def get_total_spending_year(year):
-    summary = get_db().execute(
-        'SELECT ROUND(SUM(amount), 2) as sum'
-        ' FROM spending'
-        ' WHERE yr=? and category!=?',
-        (year, 16)
-    ).fetchone()
-    return summary
-
-
-def get_mon_total_spending_doc():
-    doc_summary = get_db().execute(
-        'SELECT ROUND(SUM(amount), 2) as sum, yr, mon'
-        ' FROM spending'
-        ' WHERE category=?'
-        ' GROUP BY yr, mon'
-        ' ORDER BY yr, mon',
-        (16,)
-    ).fetchall()
-    return doc_summary
-
-
-def get_total_spending_doc():
-    doc_summary = get_db().execute(
-        'SELECT ROUND(SUM(amount), 2) as sum'
-        ' FROM spending'
-        ' WHERE category=?',
-        (16,)
-    ).fetchone()
-    return doc_summary
+    def get_total_amount_of_doctor_spending(self):
+        """
+        This method will get total spending of a given year
+        :return:
+        """
+        total_amount_doctor_spending_sql = f'SELECT ROUND(SUM(amount), 2) as sum' \
+                                           f' FROM {self.__name__} WHERE category = 16'
+        total_amount_doctor_spending = self._fetch_one_action(total_amount_doctor_spending_sql)
+        return total_amount_doctor_spending['sum']

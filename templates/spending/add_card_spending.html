@@ -2,6 +2,7 @@
 {% block card %}
 <div class="wrap-input100 bg1 rs1-wrap-input100">
     <span class="label-input100">Card *</span>
-    <input class="input100" type="text" value="{{ settings['cards']['name'] + ' - ' + settings['cards']['bank'] }}" readonly>
+    <input type="hidden" name="card" value="{{ settings['card']['id'] }}" />
+    <input class="input100" type="text" value="{{ settings['card']['name'] + ' - ' + settings['card']['bank'] }}" readonly>
 </div>
 {% endblock %}

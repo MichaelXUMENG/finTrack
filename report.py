@@ -1,13 +1,8 @@
-from flask import(
-    Blueprint, flash, g, redirect, render_template, request, session, url_for, Response
+from flask import (
+    Blueprint, flash, render_template, redirect, url_for
 )
-from .db_utils import (
-    get_all_spendings, get_doctor_spendings, get_spendings_card, get_spendings_month_cat,
-    get_total_spending_month, get_category_total_spending_month, get_month_total_spending_year,
-    get_total_spending_year, get_mon_total_spending_doc, get_total_spending_doc, get_spending_years,
-    get_all_category, get_all_subCategory, get_all_cards, get_all_degrees, get_all_spendings_card,
-    get_total_spending_month_cat, get_one_category, get_subcats_from_a_cat
-)
+from .db import commit_database, rollback_database
+from .db_utils import Category, SubCategory, Card, Degree, Spending, DoctorSpending
 from .interactive_graphs import interactive_annual_report, interactive_annual_report_as_div
 
 bp = Blueprint('report', __name__, url_prefix='/report')
@@ -15,170 +10,184 @@ bp = Blueprint('report', __name__, url_prefix='/report')
 
 @bp.route('/')
 def catalog():
-    years, cards = {}, {}
     try:
-        years = get_spending_years()
-        cards = get_all_cards(order='id')
+        years = Spending().get_years()
+        cards = Card().fetch_all_in_order(order='id')
+
+        commit_database()
+
+        return render_template('report/catalog.html', years=years, cards=cards)
     except Exception as e:
         flash(e, 'error')
-    return render_template('report/catalog.html', years=years, cards=cards)
+
+        rollback_database()
+
+        return redirect(url_for('index.index'))
 
 
 @bp.route('/viewall')
 def view_all_spending():
-    spendings = {}
-    cats = {}
-    subs = {}
-    cards = {}
-    degrees = {}
     try:
-        spendings = get_all_spendings()
-        for pair in get_all_category(order='id'):
-            cats[pair['id']] = pair['name']
-        for pair in get_all_subCategory(order='id'):
-            subs[pair['id']] = pair['name']
-        for pair in get_all_cards(order='id'):
-            cards[pair['id']] = pair['name']
-        for pair in get_all_degrees(order='id'):
-            degrees[pair['id']] = pair['name']
+        spendings = Spending().fetch_all_category_spending(include_doctor=False)
+        categories = {pair['id']: pair['name'] for pair in Category().fetch_all_in_order(order='id')}
+        sub_categories = {pair['id']: pair['name'] for pair in SubCategory().fetch_all_in_order(order='id')}
+        cards = {pair['id']: pair['name'] for pair in Card().fetch_all_in_order(order='id')}
+        degrees = {pair['id']: pair['name'] for pair in Degree().fetch_all_in_order(order='id')}
+
+        commit_database()
+
+        return render_template("report/allspending.html", spendings=spendings, cats=categories, subs=sub_categories,
+                               cards=cards, degrees=degrees)
     except Exception as e:
         flash(e, 'error')
-    return render_template("report/allspending.html", spendings=spendings, cats=cats, subs=subs, cards=cards, degrees=degrees)
+
+        rollback_database()
+
+        return redirect(url_for('report.catalog'))
 
 
-@bp.route('/<int:card>/viewall')
-def view_all_spending_card(card):
-    spendings = {}
-    cats = {}
-    subs = {}
-    cards = {}
-    degrees = {}
+@bp.route('/<int:card_id>/viewall')
+def view_all_spending_card(card_id):
     try:
-        spendings = get_spendings_card(card)
-        for pair in get_all_category(order='id'):
-            cats[pair['id']] = pair['name']
-        for pair in get_all_subCategory(order='id'):
-            subs[pair['id']] = pair['name']
-        for pair in get_all_cards(order='id'):
-            cards[pair['id']] = pair['name']
-        for pair in get_all_degrees(order='id'):
-            degrees[pair['id']] = pair['name']
+        spendings = Spending().fetch_all_spendings_from_a_card(card_id, include_doctor=False)
+        categories = {pair['id']: pair['name'] for pair in Category().fetch_all_in_order(order='id')}
+        sub_categories = {pair['id']: pair['name'] for pair in SubCategory().fetch_all_in_order(order='id')}
+        cards = {pair['id']: pair['name'] for pair in Card().fetch_all_in_order(order='id')}
+        degrees = {pair['id']: pair['name'] for pair in Degree().fetch_all_in_order(order='id')}
+
+        commit_database()
+
+        return render_template("report/cardspending.html", spendings=spendings, cats=categories, subs=sub_categories,
+                               cards=cards, card_id=card_id, degrees=degrees)
     except Exception as e:
         flash(e, 'error')
-    return render_template("report/cardspending.html", spendings=spendings, cats=cats, subs=subs, cards=cards,
-                           card_id=card, degrees=degrees)
+
+        rollback_database()
+
+        return redirect(url_for('report.catalog'))
 
 
-@bp.route('/<int:card>/addcardspending')
-def add_spending_card(card):
-    cats = {}
-    subs = {}
-    cards = {}
-    degrees = {}
-    spendings = {}
+@bp.route('/<int:card_id>/addcardspending')
+def add_spending_card(card_id):
     try:
-        spendings = get_all_spendings_card(card)
-        for pair in get_all_category(order='id'):
-            cats[pair['id']] = pair['name']
-        for pair in get_all_subCategory(order='id'):
-            subs[pair['id']] = pair['name']
-        for pair in get_all_cards(order='id'):
-            cards[pair['id']] = pair['name']
-        for pair in get_all_degrees(order='id'):
-            degrees[pair['id']] = pair['name']
+        spendings = Spending().fetch_all_spendings_from_a_card(card_id)
+        categories = {pair['id']: pair['name'] for pair in Category().fetch_all_in_order(order='id')}
+        sub_categories = {pair['id']: pair['name'] for pair in SubCategory().fetch_all_in_order(order='id')}
+        cards = {pair['id']: pair['name'] for pair in Card().fetch_all_in_order(order='id')}
+        degrees = {pair['id']: pair['name'] for pair in Degree().fetch_all_in_order(order='id')}
+
+        commit_database()
+
+        return render_template("report/cardspending.html", spendings=spendings, cats=categories, subs=sub_categories,
+                               cards=cards, card_id=card_id, degrees=degrees)
     except Exception as e:
         flash(e, 'error')
-    return render_template("report/cardspending.html", spendings=spendings, cats=cats, subs=subs, cards=cards,
-                           card_id=card, degrees=degrees)
+
+        rollback_database()
+
+        return redirect(url_for('report.catalog'))
 
 
 @bp.route('/<int:year>/<int:month>')
 def view_monthly_summary(year, month):
-    cats = {}
-    sum = {}
-    cat_sum = {}
     try:
-        sum = get_total_spending_month(year, month)
-        cat_sum = get_category_total_spending_month(year, month)
-        for pair in get_all_category(order='id'):
-            cats[pair['id']] = pair['name']
+        total_amount = Spending().get_total_spending_amount_of_month(year, month)
+        total_amount_category = Spending().get_each_category_total_spending_amount_of_month(year, month, include_doctor=False)
+        categories = {pair['id']: pair['name'] for pair in Category().fetch_all_in_order(order='id')}
+
+        commit_database()
+
+        return render_template("report/monthsummary.html", sum=total_amount, cat_sum=total_amount_category,
+                               cats=categories, month=month, year=year)
     except Exception as e:
         flash(e, 'error')
-    return render_template("report/monthsummary.html", sum=sum, cat_sum=cat_sum, cats=cats, month=month, year=year)
+
+        rollback_database()
+
+        return redirect(url_for('report.catalog'))
 
 
 @bp.route('/<int:year>')
 def view_annual_summary(year):
-    sum = {}
-    allAmount = 0
     try:
-        sum = get_month_total_spending_year(year)
-        allAmount = get_total_spending_year(year)
+        monthly_amount = Spending().get_total_spending_amount_of_each_month(year, include_doctor=False)
+        annual_amount = Spending().get_total_spending_of_a_year(year, include_doctor=False)
         graphJSON = interactive_annual_report(year)
         div_graph = interactive_annual_report_as_div(year)
+
+        commit_database()
+
+        return render_template("report/annualReport.html", year=year, sum=monthly_amount, amount=annual_amount,
+                               graphJSON=graphJSON, div_graph=div_graph)
     except Exception as e:
         flash(e, 'error')
-    return render_template("report/annualReport.html", year=year, sum=sum, amount=allAmount, graphJSON=graphJSON, div_graph=div_graph)
+
+        rollback_database()
+
+        return redirect(url_for('report.catalog'))
 
 
 @bp.route('/docSpending')
 def view_doc_summary():
-    doc_annual_sum, doc_mon_sum = 0, 0
-    doc_spending = {}
     try:
-        doc_spending = get_doctor_spendings()
-        doc_annual_sum = get_total_spending_doc()
-        doc_mon_sum = get_mon_total_spending_doc()
+        doc_spending = DoctorSpending().fetch_doctor_spending()
+        doc_annual_sum = DoctorSpending().get_total_amount_of_doctor_spending()
+        doc_monthly_sum = DoctorSpending().get_doctor_spending_of_each_month()
+
+        commit_database()
+
+        return render_template("report/docReport.html", doc_spending=doc_spending, doc_annual_sum=doc_annual_sum,
+                               doc_mon_sum=doc_monthly_sum)
     except Exception as e:
         flash(e, 'error')
-    return render_template("report/docReport.html", doc_spending=doc_spending, doc_annual_sum=doc_annual_sum,
-                           doc_mon_sum=doc_mon_sum)
+
+        rollback_database()
+
+        return redirect(url_for('report.catalog'))
 
 
-@bp.route('/<int:year>/<int:month>/<int:category>')
-def monthlyCatTransaction(year, month, category):
-    subs = {}
-    cards = {}
-    degrees = {}
-    transactions = {}
-    catNm = {}
-    totalSpending = 0
+@bp.route('/<int:year>/<int:month>/<int:category_id>')
+def monthlyCatTransaction(year, month, category_id):
     try:
-        transactions = get_spendings_month_cat(year, month, category)
-        totalSpending = get_total_spending_month_cat(year, month, category)
-        catNm = get_one_category(category)['name']
-        subCat = get_subcats_from_a_cat(category)
-        for pair in subCat:
-            subs[pair['id']] = pair['name']
-        for pair in get_all_cards(order='id'):
-            cards[pair['id']] = pair['name']
-        for pair in get_all_degrees(order='id'):
-            degrees[pair['id']] = pair['name']
+        transactions = Spending().fetch_all_spending_of_category_in_month(year, month, category_id)
+        total_month_amount = Spending().get_total_spending_amount_of_month(year, month, category_id)
+        category_name = Category().fetch_one_by_id(category_id)['name']
+
+        sub_categories = {pair['id']: pair['name'] for pair in SubCategory().fetch_all_subcategories_in_category(category_id)}
+        cards = {pair['id']: pair['name'] for pair in Card().fetch_all_in_order(order='id')}
+        degrees = {pair['id']: pair['name'] for pair in Degree().fetch_all_in_order(order='id')}
+
+        commit_database()
+
+        return render_template("report/monthCatTransaction.html", transactions=transactions, catNm=category_name,
+                               subs=sub_categories, cards=cards, degrees=degrees, year=year, month=month,
+                               totalSpending=total_month_amount)
     except Exception as e:
         flash(e, 'error')
-    return render_template("report/monthCatTransaction.html", transactions=transactions, catNm=catNm, subs=subs,
-                           cards=cards, degrees=degrees, year=year, month=month, totalSpending=totalSpending)
+
+        rollback_database()
+
+        return redirect(url_for('report.catalog'))
 
 
 @bp.route('/doctor')
 def doctorSummary():
-    subs = {}
-    cards = {}
-    degrees = {}
-    transactions = {}
-    monthSummary, totalSpending = 0, 0
     try:
-        transactions = get_doctor_spendings()
-        monthSummary = get_mon_total_spending_doc()
-        totalSpending = get_total_spending_doc()['sum']
-        subCat = get_subcats_from_a_cat(16)
-        for pair in subCat:
-            subs[pair['id']] = pair['name']
-        for pair in get_all_cards(order='id'):
-            cards[pair['id']] = pair['name']
-        for pair in get_all_degrees(order='id'):
-            degrees[pair['id']] = pair['name']
+        transactions = DoctorSpending().fetch_doctor_spending()
+        monthly_amount = DoctorSpending().get_doctor_spending_of_each_month()
+        total_amount = DoctorSpending().get_total_amount_of_doctor_spending()
+
+        sub_categories = {pair['id']: pair['name'] for pair in SubCategory().fetch_all_subcategories_in_category(16)}
+        cards = {pair['id']: pair['name'] for pair in Card().fetch_all_in_order(order='id')}
+        degrees = {pair['id']: pair['name'] for pair in Degree().fetch_all_in_order(order='id')}
+
+        commit_database()
+
+        return render_template("report/doctorSummary.html", transactions=transactions, monthSummary=monthly_amount,
+                               totalSpending=total_amount, subs=sub_categories, cards=cards, degrees=degrees)
     except Exception as e:
         flash(e, 'error')
-    return render_template("report/doctorSummary.html", transactions=transactions, monthSummary=monthSummary,
-                           totalSpending=totalSpending, subs=subs, cards=cards, degrees=degrees)
+
+        rollback_database()
+
+        return redirect(url_for('report.catalog'))

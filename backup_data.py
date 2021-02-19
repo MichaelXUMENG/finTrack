@@ -2,6 +2,7 @@ from flask import(
     Blueprint, redirect, url_for, flash
 )
 import pandas as pd
+from .db_utils import Category, SubCategory, Card, Degree, Spending
 from sqlalchemy import create_engine
 engine = create_engine("sqlite:///instance/finTrack.sqlite")
 
@@ -9,23 +10,17 @@ bp = Blueprint('backup', __name__, url_prefix='/backup')
 
 
 def pull_write_data():
-    con = engine.connect()
-    card = con.execute('SELECT * FROM cards')
-    category = con.execute('SELECT * FROM categories')
-    sub_category = con.execute('SELECT * FROM sub_categories')
-    degree = con.execute('SELECT * FROM degrees')
-    spending = con.execute('SELECT * FROM spending')
-    df_card = pd.DataFrame(card.fetchall())
-    df_card.columns = card.keys()
-    df_category = pd.DataFrame(category.fetchall())
-    df_category.columns = category.keys()
-    df_subcategory = pd.DataFrame(sub_category.fetchall())
-    df_subcategory.columns = sub_category.keys()
-    df_degree = pd.DataFrame(degree.fetchall())
-    df_degree.columns = degree.keys()
-    df_spending = pd.DataFrame(spending.fetchall())
-    df_spending.columns = spending.keys()
-    con.close()
+    df_card = pd.DataFrame(Card().fetch_all())
+    df_card.columns = ['id', 'bank', 'name', 'cur_balance', 'pay_date', 'last_statement']
+    df_category = pd.DataFrame(Category().fetch_all())
+    df_category.columns = ['id', 'name']
+    df_subcategory = pd.DataFrame(SubCategory().fetch_all())
+    df_subcategory.columns = ['id', 'name', 'c_id', 'default_card', 'default_degree']
+    df_degree = pd.DataFrame(Degree().fetch_all())
+    df_degree.columns = ['id', 'name']
+    df_spending = pd.DataFrame(Spending().fetch_all())
+    df_spending.columns = ['id', 'name', 'amount', 'category', 'sub_category', 'yr', 'mon', 'daynum', 'card', 'degree',
+                           'comments']
 
     with pd.ExcelWriter('setting_backup.xlsx') as writer:
         df_card.to_excel(writer, sheet_name='card', index=None, header=True)

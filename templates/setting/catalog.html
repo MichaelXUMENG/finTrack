@@ -72,7 +72,7 @@
 							</header>
 							<ul>
 								{% for card in settings['card'] %}
-									<a href="{{ url_for('setting.card_view', id=card['id']) }}">
+									<a href="{{ url_for('setting.card_view', card_id=card['id']) }}">
 										<li>{{ card['name'] + ' - ' + card['bank'] }}</li>
 									</a>
 								{% endfor %}
@@ -88,7 +88,7 @@
 							</header>
 							<ul>
 								{% for degree in settings['degree'] %}
-									<a href="{{ url_for('setting.degree_view', id=degree['id']) }}">
+									<a href="{{ url_for('setting.degree_view', degree_id=degree['id']) }}">
 										<li>{{ degree['name'] }}</li>
 									</a>
 								{% endfor %}
