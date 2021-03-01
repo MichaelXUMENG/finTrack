@@ -13,7 +13,7 @@ months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 
 
 @bp.route('/<int:year>/annualReport.png')
 def annualReport(year):
-    df_monthly = pd.DataFrame(Spending().get_total_spending_amount_of_each_month(year=year, include_doctor=False))
+    df_monthly = pd.DataFrame(Spending().get_monthly_total_spending_of_a_year(year=year, include_doctor=False))
     df_monthly.columns = ['sum', 'mon']
     month_spendings = [0]*12
     for month_index in range(len(df_monthly['sum'])):

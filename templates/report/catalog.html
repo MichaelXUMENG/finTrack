@@ -38,6 +38,9 @@
         <div class="catgraph"></div>
     </div>
 
+    <h3>Yearly report</h3>
+    <div>{{ yearly_div_graph | safe }}  {{ year_monthly_div_graph | safe }}</div>
+
     <a href="{{ url_for('report.doctorSummary') }}">
         Doctor Summary
     </a>

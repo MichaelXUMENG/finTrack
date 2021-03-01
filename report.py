@@ -3,7 +3,10 @@ from flask import (
 )
 from .db import commit_database, rollback_database
 from .db_utils import Category, SubCategory, Card, Degree, Spending, DoctorSpending
-from .interactive_graphs import interactive_annual_report, interactive_annual_report_as_div
+from .interactive_graphs import interactive_annual_report, interactive_annual_report_as_div, \
+    interactive_accumulate_yearly_bar_report, interactive_annual_monthly_amount_line_report, \
+    interactive_annual_monthly_bar_report_with_buttons, interactive_utility_report_with_buttons, \
+    interactive_eating_reports_with_button
 
 bp = Blueprint('report', __name__, url_prefix='/report')
 
@@ -14,9 +17,13 @@ def catalog():
         years = Spending().get_years()
         cards = Card().fetch_all_in_order(order='id')
 
+        yearly_div_graph = interactive_accumulate_yearly_bar_report()
+        year_monthly_div_graph = interactive_annual_monthly_amount_line_report()
+
         commit_database()
 
-        return render_template('report/catalog.html', years=years, cards=cards)
+        return render_template('report/catalog.html', years=years, cards=cards, yearly_div_graph=yearly_div_graph,
+                               year_monthly_div_graph=year_monthly_div_graph)
     except Exception as e:
         flash(e, 'error')
 
@@ -91,7 +98,7 @@ def add_spending_card(card_id):
 @bp.route('/<int:year>/<int:month>')
 def view_monthly_summary(year, month):
     try:
-        total_amount = Spending().get_total_spending_amount_of_month(year, month)
+        total_amount = Spending().get_total_spending_amount_of_month(year=year, month=month)
         total_amount_category = Spending().get_each_category_total_spending_amount_of_month(year, month, include_doctor=False)
         categories = {pair['id']: pair['name'] for pair in Category().fetch_all_in_order(order='id')}
 
@@ -110,15 +117,17 @@ def view_monthly_summary(year, month):
 @bp.route('/<int:year>')
 def view_annual_summary(year):
     try:
-        monthly_amount = Spending().get_total_spending_amount_of_each_month(year, include_doctor=False)
-        annual_amount = Spending().get_total_spending_of_a_year(year, include_doctor=False)
-        graphJSON = interactive_annual_report(year)
-        div_graph = interactive_annual_report_as_div(year)
+        monthly_amount = Spending().get_monthly_total_spending_of_a_year(year, include_doctor=False)
+        annual_amount = Spending().get_total_spending_amount_of_month(year=year)
+        monthly_graph = interactive_annual_monthly_bar_report_with_buttons(year)
+        utility_report_graph = interactive_utility_report_with_buttons(year)
+        eating_report_graph = interactive_eating_reports_with_button(year)
 
         commit_database()
 
         return render_template("report/annualReport.html", year=year, sum=monthly_amount, amount=annual_amount,
-                               graphJSON=graphJSON, div_graph=div_graph)
+                               monthly_graph=monthly_graph, utility_report_graph=utility_report_graph,
+                               eating_report_graph=eating_report_graph)
     except Exception as e:
         flash(e, 'error')
 
@@ -150,7 +159,7 @@ def view_doc_summary():
 def monthlyCatTransaction(year, month, category_id):
     try:
         transactions = Spending().fetch_all_spending_of_category_in_month(year, month, category_id)
-        total_month_amount = Spending().get_total_spending_amount_of_month(year, month, category_id)
+        total_month_amount = Spending().get_total_spending_amount_of_month(year=year, month=month, category=category_id)
         category_name = Category().fetch_one_by_id(category_id)['name']
 
         sub_categories = {pair['id']: pair['name'] for pair in SubCategory().fetch_all_subcategories_in_category(category_id)}
