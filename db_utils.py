@@ -137,6 +137,16 @@ class SubCategory(AllSettings):
     default_card = int()
     default_degree = int()
 
+    def get_sub_category_id_by_name(self, sub_category_name: str):
+        """
+        Get the sub-category id given the sub-category name
+        :param sub_category_name: sub-category name in string
+        :return:
+        """
+        one_sub_category_sql = f'SELECT id FROM {self.__name__} WHERE name = "{sub_category_name}"'
+        sub_category = self._fetch_one_action(one_sub_category_sql)
+        return sub_category['id']
+
     def fetch_all_subcategories_in_category(self, category_id: int):
         """
         This method will get a list of all linked sub-categories from a category
@@ -362,19 +372,31 @@ class Spending(AllSettings):
     # Summary Section
     ###############################################################
 
-    def get_total_spending_amount_of_month(self, year: int, month: int, category: int = None):
+    def get_total_spending_amount_of_month(self, year: int = None, month: int = None, category: int = None):
         """
         Get the amount of total spending of a month in a year.
         If the category is provided, then return the total spending of that category in that month
         Otherwise return all category except for doctor category (16)
-        :param year: year in int
-        :param month: month in int
+        :param year: year in int or None
+        :param month: month in int or None
         :param category: id of a particular category or None
         :return:
         """
-        condition = ' and category != 16' if category is None else f' and category = {category}'
+        condition = 'category != 16' if category is None else f'category = {category}'
+        if year is None:
+            yearly_accumulate_spending_sql = f'SELECT ROUND(SUM(amount), 2) as sum, yr FROM {self.__name__}' \
+                                             f' WHERE {condition}' \
+                                             f' GROUP BY yr ORDER BY yr'
+            return self._fetch_all_action(yearly_accumulate_spending_sql)
+
+        if month is None:
+            yearly_total_spending_sql = f'SELECT ROUND(SUM(amount), 2) as sum FROM {self.__name__}' \
+                                        f' WHERE yr = {year} and {condition}'
+            yearly_total_spending_amount = self._fetch_one_action(yearly_total_spending_sql)
+            return yearly_total_spending_amount['sum']
+
         total_spending_amount_sql = f'SELECT ROUND(SUM(amount), 2) as sum FROM {self.__name__}' \
-                                    f' WHERE yr = {year} and mon = {month}{condition}'
+                                    f' WHERE yr = {year} and mon = {month} and {condition}'
         total_spending_amount = self._fetch_one_action(total_spending_amount_sql)
         return total_spending_amount['sum']
 
@@ -447,7 +469,7 @@ class Spending(AllSettings):
                                            f' GROUP BY sub_category, mon ORDER BY mon'
         return self._fetch_all_action(sub_category_monthly_summary_sql)
 
-    def get_total_spending_amount_of_each_month(self, year: int, include_doctor: bool = True):
+    def get_monthly_total_spending_of_a_year(self, year: int, include_doctor: bool = True):
         """
         This method will get each month's total spending of a year.
         Exclude doctor category if include_doctor is set to False
@@ -460,18 +482,45 @@ class Spending(AllSettings):
                                         f' WHERE yr = {year}{condition} GROUP BY mon ORDER BY mon'
         return self._fetch_all_action(each_month_total_spending_sql)
 
-    def get_total_spending_of_a_year(self, year: int, include_doctor: bool = True):
+    ################################################################################
+    # Get average
+    ################################################################################
+
+    def get_average_monthly_spending_amount(self, condition_dict: dict):
         """
-        This method will return total amount of spending of a given year
-        :param year: the year to be summarized
-        :param include_doctor: whether to include doctor category. Default set to True
+        This method will calculate the average amount of spending of each month.
+        Exclude doctor category if include_doctor is set to False
+        :param condition_dict: the condition as dictionary, as format dict(key, operation, value)
         :return:
         """
-        condition = '' if include_doctor else ' and category != 16'
-        yearly_total_spending_sql = f'SELECT ROUND(SUM(amount), 2) as sum FROM {self.__name__}' \
-                                    f' WHERE yr = {year}{condition}'
-        yearly_total_spending_amount = self._fetch_one_action(yearly_total_spending_sql)
-        return yearly_total_spending_amount['sum']
+        if not condition_dict:
+            condition = ''
+        else:
+            condition = f" WHERE {condition_dict['key']} {condition_dict['operation']} {condition_dict['value']}"
+
+        average_monthly_amount_sql = f'SELECT ROUND(AVG(monthly_sum), 2) as avg, mon' \
+                                     f' FROM (SELECT ROUND(SUM(amount), 2) as monthly_sum, mon' \
+                                     f' FROM {self.__name__}{condition}' \
+                                     f' GROUP BY yr, mon ORDER BY mon )' \
+                                     f' GROUP BY mon ORDER BY mon'
+        return self._fetch_all_action(average_monthly_amount_sql)
+
+    def get_average_amount_of_all_spending(self, condition_dict: dict) -> int:
+        """
+        this method will calculate the average amount of a sub-category monthly spending of all-time
+        :param condition_dict: the condition as dictionary, as format dict(key, operation, value)
+        :return: the number of average amount
+        """
+        if not condition_dict:
+            condition = ''
+        else:
+            condition = f" WHERE {condition_dict['key']} {condition_dict['operation']} {condition_dict['value']}"
+        sub_category_average_sql = f'SELECT ROUND(AVG(monthly_sum), 2) as avg' \
+                                   f' FROM(SELECT ROUND(SUM(amount), 2) as monthly_sum' \
+                                   f' FROM {self.__name__}{condition}' \
+                                   f' GROUP BY yr, mon ORDER BY yr, mon)'
+        sub_category_average = self._fetch_one_action(sub_category_average_sql)
+        return sub_category_average['avg']
 
     ################################################################################
     # Add Spending
