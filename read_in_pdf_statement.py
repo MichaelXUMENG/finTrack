@@ -145,24 +145,24 @@ def read_pdf_statement_chase(pdf_path: str, card_type) -> list:
     final_list = []
     start_index = 0
 
-    # loop through all the <div> tags to find the symbol of the starting of all transactions.
-    # For statements of Chase credit cards, the symbol is 'ACCOUNT ACTIVITY'
-    for index, div in enumerate(all_divs):
-        try:
-            # found the symbol, then return the starting index
-            if div.contents[0].contents[0].strip() == card_key_points[card_type]['starting_index']:
-                start_index = index
-                break
-        # when IndexError or TypeError exceptions are raised, we just continue searching the next tag
-        # IndexError exception may be raised when there is no item from the '.contents' method of a tag
-        # for example, <div style="left:0px; top:50px;"><span style="position:absolute;"></span></div>, this tag's
-        # second '.contents' will return nothing
-
-        # TypeError exception may be raised when NoneType is returned by calling '.contents' method of a tag.
-        # for example, <div style="left: 1px><div style="left: 10px><div style="left: 20px></div></div></div>, this
-        # tag's second '.contents[0]' will return a NoneType object. Cannot compare to a String.
-        except (IndexError, TypeError, AttributeError):
-            continue
+    # # loop through all the <div> tags to find the symbol of the starting of all transactions.
+    # # For statements of Chase credit cards, the symbol is 'ACCOUNT ACTIVITY'
+    # for index, div in enumerate(all_divs):
+    #     try:
+    #         # found the symbol, then return the starting index
+    #         if div.contents[0].contents[0].strip() == card_key_points[card_type]['starting_index']:
+    #             start_index = index
+    #             break
+    #     # when IndexError or TypeError exceptions are raised, we just continue searching the next tag
+    #     # IndexError exception may be raised when there is no item from the '.contents' method of a tag
+    #     # for example, <div style="left:0px; top:50px;"><span style="position:absolute;"></span></div>, this tag's
+    #     # second '.contents' will return nothing
+    #
+    #     # TypeError exception may be raised when NoneType is returned by calling '.contents' method of a tag.
+    #     # for example, <div style="left: 1px><div style="left: 10px><div style="left: 20px></div></div></div>, this
+    #     # tag's second '.contents[0]' will return a NoneType object. Cannot compare to a String.
+    #     except (IndexError, TypeError, AttributeError):
+    #         continue
 
     # Start from the symbol tag by assigning the current_tag to the starting point
     current_tag = all_divs[start_index]
